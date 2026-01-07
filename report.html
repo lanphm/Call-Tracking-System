@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Báo Cáo Chi Tiết - Internal App</title>
+    <title>Hệ Thống Báo Cáo Tổng Hợp & Pivot</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -10,161 +10,160 @@
 </head>
 <body class="bg-slate-50 p-4 sm:p-8">
     <div class="max-w-7xl mx-auto space-y-6">
-        <div class="flex justify-between items-center bg-slate-900 p-6 rounded-[32px] text-white shadow-2xl">
+        
+        <div class="bg-slate-900 p-8 rounded-[40px] text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-                <h1 class="text-2xl font-black italic uppercase tracking-tighter">Báo Cáo Hiệu Quả Telesales</h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Dữ liệu cập nhật thời gian thực</p>
+                <h1 class="text-3xl font-black italic uppercase tracking-tighter italic">Analytics Hub</h1>
+                <p id="period-label" class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.2em]">Đang xem: Tháng này</p>
             </div>
-            <button onclick="location.href='index.html'" class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl text-xs font-black uppercase italic transition-all">Quay lại</button>
+            <div class="flex flex-wrap gap-2 bg-white/5 p-2 rounded-2xl border border-white/10">
+                <button onclick="loadData('week')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-white hover:text-slate-900 transition-all">Tuần này</button>
+                <button onclick="loadData('month')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-white hover:text-slate-900 transition-all">Tháng này</button>
+                <button onclick="loadData('year')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-white hover:text-slate-900 transition-all">Năm nay</button>
+                <button onclick="location.href='index.html'" class="bg-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase italic ml-4">Quay lại</button>
+            </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4" id="stat-cards">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
+            <div class="p-4 bg-blue-50/50 rounded-2xl">
+                <h4 class="text-[10px] font-black text-blue-600 uppercase mb-2 italic">● Kết quả (Output)</h4>
+                <p class="text-[11px] text-slate-600"><b>Thành công:</b> Khách đã đến (Sum of Attended).<br><b>Tỉ lệ chốt:</b> % Success / Total Call.</p>
             </div>
+            <div class="p-4 bg-orange-50/50 rounded-2xl border-l-4 border-orange-200">
+                <h4 class="text-[10px] font-black text-orange-600 uppercase mb-2 italic">● Chất lượng (Leads)</h4>
+                <p class="text-[11px] text-slate-600"><b>Warm/Hot:</b> Phân loại khách quan tâm.<br><b>Follow-up:</b> Khách cần chăm sóc lại.</p>
+            </div>
+            <div class="p-4 bg-red-50/50 rounded-2xl">
+                <h4 class="text-[10px] font-black text-red-600 uppercase mb-2 italic">● Hao hụt (Loss)</h4>
+                <p class="text-[11px] text-slate-600"><b>No Ans/Wrong No:</b> Tỉ lệ data lỗi hoặc khách không tiếp cận được.</p>
+            </div>
+        </div>
 
         <div class="grid lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-white p-6 rounded-[40px] shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xs font-black uppercase text-slate-400 tracking-widest italic">Xu hướng 30 ngày</h2>
-                    <select id="chart-filter" onchange="initReport()" class="text-[10px] font-black uppercase bg-slate-100 p-2 rounded-lg border-none outline-none">
-                        <option value="30">30 ngày qua</option>
-                        <option value="7">7 ngày qua</option>
-                    </select>
-                </div>
+                <h2 class="text-xs font-black uppercase italic text-slate-400 mb-4">Biểu đồ xu hướng</h2>
                 <canvas id="mainChart" height="120"></canvas>
             </div>
-
             <div class="bg-white p-6 rounded-[40px] shadow-sm border border-slate-200">
-                <h2 class="text-xs font-black uppercase text-slate-400 mb-6 tracking-widest italic">Hiệu quả theo Chi nhánh</h2>
-                <div id="location-stats" class="space-y-4">
-                    </div>
+                <h2 class="text-xs font-black uppercase italic text-slate-400 mb-6">Hiệu suất Chi nhánh</h2>
+                <div id="location-stats" class="space-y-4"></div>
             </div>
         </div>
 
-        <div class="bg-white rounded-[40px] shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-6 border-b border-slate-50 flex justify-between items-center">
-                <h2 class="text-xs font-black uppercase text-slate-400 tracking-widest italic">Nhật ký chi tiết</h2>
-            </div>
-            <div class="overflow-x-auto">
+        <div class="grid lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-[40px] shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 bg-slate-900 text-white font-black italic uppercase text-xs tracking-widest">Pivot: Theo Nhân Viên</div>
                 <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-[9px] font-black uppercase text-slate-400">
-                        <tr>
-                            <th class="p-5">Ngày</th>
-                            <th class="p-5">Nhân viên</th>
-                            <th class="p-5">Tổng Call</th>
-                            <th class="p-5">Thành công</th>
-                            <th class="p-5">Warm</th>
-                            <th class="p-5">Hot</th>
-                            <th class="p-5">No Answer</th>
-                            <th class="p-5">Wrong No.</th>
-                            <th class="p-5">Follow-up</th>
-                            <th class="p-5">Booked (Tổng)</th>
-                            <th class="p-5">Đã Đến (Tổng)</th>
-                        </tr>
+                    <thead class="bg-slate-50 text-[9px] font-black uppercase text-slate-500">
+                        <tr><th class="p-4">Staff</th><th class="p-4 text-center">Call</th><th class="p-4 text-center">Success</th><th class="p-4 text-center">% Chốt</th></tr>
                     </thead>
-                    <tbody id="report-table-body" class="font-bold text-slate-700">
-                        </tbody>
+                    <tbody id="pivot-staff-body"></tbody>
+                </table>
+            </div>
+            <div class="bg-white rounded-[40px] shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 bg-slate-100 font-black italic uppercase text-xs tracking-widest text-slate-600">Pivot: Theo Thời Gian</div>
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-[9px] font-black uppercase text-slate-500">
+                        <tr><th class="p-4">Giai đoạn</th><th class="p-4 text-center">Call</th><th class="p-4 text-center">Success</th><th class="p-4 text-center">Hot</th></tr>
+                    </thead>
+                    <tbody id="pivot-time-body"></tbody>
                 </table>
             </div>
         </div>
+
     </div>
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
         let myChart = null;
 
-        async function initReport() {
-            const days = document.getElementById('chart-filter').value;
-            const { data, error } = await supabaseClient
-                .from('daily_reports')
-                .select('*, report_details(*, locations(name))')
-                .order('report_date', { ascending: false });
+        async function loadData(period = 'month') {
+            const labels = { week: 'Tuần này', month: 'Tháng này', year: 'Năm nay' };
+            document.getElementById('period-label').innerText = `Đang xem: ${labels[period]}`;
+            
+            let query = supabaseClient.from('daily_reports').select('*, report_details(*, locations(name))');
+            const now = new Date();
+            if (period === 'week') query = query.gte('report_date', new Date(now.setDate(now.getDate() - 7)).toISOString());
+            else if (period === 'month') query = query.gte('report_date', new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
+            else if (period === 'year') query = query.gte('report_date', new Date(now.getFullYear(), 0, 1).toISOString());
 
-            if (error) return;
+            const { data, error } = await query.order('report_date', { ascending: true });
+            if (!error) renderAll(data, period);
+        }
 
-            // --- TÍNH TOÁN STATS ---
-            const totals = data.reduce((acc, r) => {
-                acc.calls += (r.total_calls || 0);
-                acc.success += (r.successful_calls || 0);
-                acc.warm += (r.warm_leads || 0);
-                acc.hot += (r.hot_leads || 0);
-                acc.noAns += (r.no_answer || 0);
-                acc.wrong += (r.wrong_number || 0);
-                acc.follow += (r.follow_ups || 0);
-                return acc;
-            }, { calls: 0, success: 0, warm: 0, hot: 0, noAns: 0, wrong: 0, follow: 0 });
-
-            const statConfigs = [
-                { label: 'Tổng Calls', val: totals.calls, color: 'text-slate-900', bg: 'bg-slate-100' },
-                { label: 'Thành Công', val: totals.success, color: 'text-blue-600', bg: 'bg-blue-50' },
-                { label: 'Warm Leads', val: totals.warm, color: 'text-orange-500', bg: 'bg-orange-50' },
-                { label: 'Hot Leads', val: totals.hot, color: 'text-red-600', bg: 'bg-red-50' },
-                { label: 'No Answer', val: totals.noAns, color: 'text-slate-400', bg: 'bg-slate-50' },
-                { label: 'Follow-up', val: totals.follow, color: 'text-purple-600', bg: 'bg-purple-50' }
-            ];
-
-            document.getElementById('stat-cards').innerHTML = statConfigs.map(s => `
-                <div class="${s.bg} p-5 rounded-[28px] border border-white/50 shadow-inner">
-                    <p class="text-[8px] font-black uppercase text-slate-400 mb-1 tracking-widest">${s.label}</p>
-                    <p class="text-xl font-black italic ${s.color}">${s.val}</p>
-                </div>`).join('');
-
-            // --- TÍNH TOÁN THEO CHI NHÁNH ---
+        function renderAll(data, period) {
+            const staffMap = {};
+            const timeMap = {};
             const locMap = {};
+
             data.forEach(r => {
+                // Staff Pivot
+                const email = r.employee_email.split('@')[0].toUpperCase();
+                if (!staffMap[email]) staffMap[email] = { calls: 0, success: 0 };
+                staffMap[email].calls += r.total_calls;
+                staffMap[email].success += r.successful_calls;
+
+                // Time Pivot
+                let gKey = r.report_date;
+                if (period === 'year') gKey = `Tháng ${new Date(r.report_date).getMonth() + 1}`;
+                if (!timeMap[gKey]) timeMap[gKey] = { calls: 0, success: 0, hot: 0 };
+                timeMap[gKey].calls += r.total_calls;
+                timeMap[gKey].success += r.successful_calls;
+                timeMap[gKey].hot += r.hot_leads;
+
+                // Branch Pivot
                 r.report_details.forEach(d => {
-                    const locName = d.locations?.name || 'Khác';
-                    if (!locMap[locName]) locMap[locName] = { booked: 0, attended: 0 };
-                    locMap[locName].booked += (d.booked_count || 0);
-                    locMap[locName].attended += (d.attended_count || 0);
+                    const ln = d.locations?.name || 'Khác';
+                    if (!locMap[ln]) locMap[ln] = { booked: 0, attended: 0 };
+                    locMap[ln].booked += d.booked_count;
+                    locMap[ln].attended += d.attended_count;
                 });
             });
 
-            document.getElementById('location-stats').innerHTML = Object.entries(locMap).map(([name, val]) => `
-                <div class="bg-slate-50 p-4 rounded-2xl">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-[10px] font-black uppercase italic">${name}</span>
-                        <span class="text-[10px] font-bold text-green-600">Đã đến: ${val.attended}</span>
-                    </div>
-                    <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                        <div class="bg-slate-900 h-full" style="width: ${(val.attended/(val.booked||1)*100)}%"></div>
-                    </div>
-                    <p class="text-[9px] mt-2 font-bold text-slate-400 uppercase">Hẹn: ${val.booked} khách</p>
-                </div>`).join('');
+            // Render Staff Table
+            document.getElementById('pivot-staff-body').innerHTML = Object.entries(staffMap).map(([n, v]) => `
+                <tr class="border-t border-slate-50 hover:bg-slate-50 font-bold">
+                    <td class="p-4 text-xs italic">${n}</td>
+                    <td class="p-4 text-center">${v.calls}</td>
+                    <td class="p-4 text-center text-blue-600">${v.success}</td>
+                    <td class="p-4 text-center"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-[10px]">${((v.success/(v.calls||1))*100).toFixed(1)}%</span></td>
+                </tr>`).join('');
 
-            // --- BIỂU ĐỒ ---
-            const chartData = [...data].reverse().slice(-days);
+            // Render Time Table
+            document.getElementById('pivot-time-body').innerHTML = Object.entries(timeMap).reverse().map(([t, v]) => `
+                <tr class="border-t border-slate-50 hover:bg-slate-50">
+                    <td class="p-4 text-xs font-bold">${t}</td>
+                    <td class="p-4 text-center">${v.calls}</td>
+                    <td class="p-4 text-center text-blue-600 font-bold">${v.success}</td>
+                    <td class="p-4 text-center text-red-500 font-bold">${v.hot}</td>
+                </tr>`).join('');
+
+            // Render Branch Bars
+            document.getElementById('location-stats').innerHTML = Object.entries(locMap).map(([n, v]) => {
+                const rate = ((v.attended / (v.booked || 1)) * 100).toFixed(0);
+                return `
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between text-[10px] font-black uppercase mb-2"><span>${n}</span><span>${rate}% Đến</span></div>
+                    <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden"><div class="bg-slate-900 h-full" style="width: ${rate}%"></div></div>
+                    <div class="flex justify-between mt-2 text-[9px] font-bold text-slate-400 uppercase"><span>Hẹn: ${v.booked}</span><span>Đến: ${v.attended}</span></div>
+                </div>`;
+            }).join('');
+
+            // Update Chart
             if (myChart) myChart.destroy();
             myChart = new Chart(document.getElementById('mainChart'), {
                 type: 'line',
                 data: {
-                    labels: chartData.map(r => r.report_date.split('-').slice(1).reverse().join('/')),
+                    labels: data.map(r => r.report_date.split('-').slice(1).reverse().join('/')),
                     datasets: [
-                        { label: 'Warm', data: chartData.map(r => r.warm_leads), borderColor: '#f97316', tension: 0.4, borderWeight: 3 },
-                        { label: 'Hot', data: chartData.map(r => r.hot_leads), borderColor: '#ef4444', tension: 0.4, borderWeight: 3 },
-                        { label: 'Success', data: chartData.map(r => r.successful_calls), borderColor: '#3b82f6', tension: 0.4, borderWeight: 2, borderDash: [5, 5] }
+                        { label: 'Success', data: data.map(r => r.successful_calls), borderColor: '#3b82f6', tension: 0.4, borderWeight: 4, pointRadius: 2 },
+                        { label: 'Hot Leads', data: data.map(r => r.hot_leads), borderColor: '#ef4444', tension: 0.4, borderWeight: 2, pointRadius: 0 }
                     ]
                 },
-                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } }
             });
-
-            // --- BẢNG CHI TIẾT ---
-            document.getElementById('report-table-body').innerHTML = data.map(r => `
-                <tr class="border-t border-slate-50 hover:bg-slate-50/50 transition-all">
-                    <td class="p-5 text-xs text-slate-400 font-mono">${r.report_date}</td>
-                    <td class="p-5 italic text-slate-900 uppercase text-xs">${r.employee_email.split('@')[0]}</td>
-                    <td class="p-5">${r.total_calls}</td>
-                    <td class="p-5 text-blue-600">${r.successful_calls}</td>
-                    <td class="p-5 text-orange-500">${r.warm_leads}</td>
-                    <td class="p-5 text-red-600">${r.hot_leads}</td>
-                    <td class="p-5 text-slate-400">${r.no_answer}</td>
-                    <td class="p-5 text-slate-400">${r.wrong_number}</td>
-                    <td class="p-5 text-purple-600">${r.follow_ups}</td>
-                    <td class="p-5">${r.report_details.reduce((s,d)=>s+d.booked_count,0)}</td>
-                    <td class="p-5 text-green-600">${r.report_details.reduce((s,d)=>s+d.attended_count,0)}</td>
-                </tr>`).join('');
         }
-
-        window.onload = initReport;
+        window.onload = () => loadData('month');
     </script>
 </body>
 </html>
