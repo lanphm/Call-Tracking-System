@@ -3,44 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Báo Cáo</title>
+    <title>Call Tracking System</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 p-2 sm:p-4">
     <div id="app" class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-2xl min-h-[500px]">
-        <h1 class="text-2xl font-black text-blue-700 uppercase text-center mb-6">Báo Cáo Hiệu Suất</h1>
+        <h1 class="text-2xl font-black text-blue-700 uppercase text-center mb-6 tracking-tighter">Báo Cáo Hiệu Suất</h1>
 
         <div id="login-section" class="py-12 text-center">
-            <button onclick="signIn()" class="w-full bg-white border-2 border-slate-200 px-6 py-4 rounded-xl shadow-sm font-bold">
-                Đăng nhập bằng Google
+            <button onclick="signIn()" class="w-full bg-white border-2 border-slate-200 px-6 py-4 rounded-xl shadow-sm hover:border-blue-500 transition-all font-bold text-slate-700">
+                <img src="https://www.google.com/favicon.ico" class="inline w-5 h-5 mr-2"> Đăng nhập bằng Google
             </button>
         </div>
 
         <div id="form-section" class="hidden space-y-4">
-            <div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl text-white">
-                <span id="user-email" class="text-[10px] truncate w-40 italic"></span>
-                <button onclick="signOut()" class="text-[10px] font-bold uppercase underline">Thoát</button>
+            <div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl text-white shadow-lg">
+                <span id="user-email" class="text-[10px] truncate w-40 italic opacity-80 font-mono"></span>
+                <button onclick="signOut()" class="text-[10px] font-black uppercase underline">Thoát</button>
             </div>
 
-            <div id="admin-tools" class="hidden grid grid-cols-2 gap-2">
-                <button onclick="location.href='report.html'" class="bg-emerald-600 text-white py-2 rounded-lg text-[10px] font-bold uppercase">📊 Báo Cáo</button>
-                <button onclick="location.href='admin.html'" class="bg-indigo-600 text-white py-2 rounded-lg text-[10px] font-bold uppercase">⚙️ Quản Trị</button>
+            <div class="grid grid-cols-2 gap-2 border-b border-slate-100 pb-4">
+                <button onclick="location.href='report.html'" class="bg-emerald-600 text-white py-2.5 rounded-lg text-[10px] font-black uppercase shadow-md">📊 Báo Cáo</button>
+                <button onclick="location.href='admin.html'" class="bg-indigo-600 text-white py-2.5 rounded-lg text-[10px] font-black uppercase shadow-md italic">⚙️ Quản Trị</button>
             </div>
 
-            <input type="date" id="report_date" onchange="loadExistingData()" class="w-full p-3 border-2 border-blue-100 rounded-xl font-black text-blue-900">
+            <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                <label class="block text-[10px] font-black text-blue-800 uppercase mb-1">📅 Ngày báo cáo:</label>
+                <input type="date" id="report_date" onchange="loadExistingData()" class="w-full bg-transparent border-none font-black text-xl text-blue-900 focus:ring-0">
+            </div>
 
             <div class="grid grid-cols-2 gap-3">
-                <input type="number" id="total_calls" placeholder="Tổng gọi" class="p-3 border rounded-xl font-bold text-lg">
-                <input type="number" id="successful_calls" placeholder="Thành công" class="p-3 border rounded-xl font-bold text-lg text-emerald-600">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Tổng gọi</label>
+                    <input type="number" id="total_calls" class="w-full bg-transparent font-black text-2xl outline-none" placeholder="0">
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Thành công</label>
+                    <input type="number" id="successful_calls" class="w-full bg-transparent font-black text-2xl outline-none text-emerald-600" placeholder="0">
+                </div>
             </div>
 
             <div id="location-inputs" class="space-y-2 border-t pt-2"></div>
 
             <textarea id="remarks" class="w-full p-3 border rounded-xl text-sm mt-1 bg-slate-50" rows="2" placeholder="Ghi chú (Nghỉ/OFF/Lỗi...)"></textarea>
 
-            <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-lg shadow-lg uppercase">Lưu Dữ Liệu</button>
+            <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-lg shadow-xl hover:bg-blue-700 transition-all uppercase italic tracking-widest">Lưu Dữ Liệu</button>
         </div>
     </div>
 
@@ -62,22 +71,19 @@
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return;
 
-            // --- CHẾ ĐỘ PUBLIC: HIỆN FORM CHO MỌI EMAIL ---
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('form-section').classList.remove('hidden');
             document.getElementById('user-email').innerText = user.email;
 
-            // Tự động thêm user mới vào database (nếu chưa có) để bạn Approve sau
-            await supabaseClient.from('user_permissions').insert([{ 
-                email: user.email, 
-                full_name: user.user_metadata.full_name,
-                role: 'pending' 
-            }]).select();
-
-            // QUY ĐỊNH ADMIN: Hãy thay email của bạn vào đây để thấy nút Quản trị
-            const myAdminEmail = "email-cua-ban@gmail.com"; 
-            if (user.email === myAdminEmail) {
-                document.getElementById('admin-tools').classList.remove('hidden');
+            // KIỂM TRA & TỰ ĐĂNG KÝ VÀO NHÓM CHỜ
+            const { data: perm } = await supabaseClient.from('user_permissions').select('*').eq('email', user.email).maybeSingle();
+            if (!perm) {
+                await supabaseClient.from('user_permissions').insert([{ 
+                    email: user.email, 
+                    full_name: user.user_metadata.full_name || 'User Mới',
+                    role: 'pending' 
+                }]);
+                console.log("Đã thêm vào danh sách chờ duyệt.");
             }
 
             document.getElementById('report_date').valueAsDate = new Date();
@@ -85,15 +91,16 @@
             await loadExistingData();
         }
 
-        // --- CÁC HÀM LƯU/LOAD DỮ LIỆU GIỮ NGUYÊN ---
         async function loadLocations() {
             const { data } = await supabaseClient.from('locations').select('*').eq('is_active', true).order('id');
             locations = data || [];
             document.getElementById('location-inputs').innerHTML = locations.map(loc => `
-                <div class="flex items-center gap-2 p-2 border-b">
-                    <span class="flex-1 text-xs font-bold uppercase">${loc.name}</span>
-                    <input type="number" id="booked_${loc.id}" placeholder="Book" class="w-16 p-2 border rounded text-center text-xs font-bold">
-                    <input type="number" id="attended_${loc.id}" placeholder="Atnd" class="w-16 p-2 border rounded text-center text-xs font-bold text-blue-600">
+                <div class="flex items-center gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                    <span class="flex-1 text-[11px] font-black text-slate-600 uppercase">${loc.name}</span>
+                    <div class="flex gap-1.5">
+                        <input type="number" id="booked_${loc.id}" placeholder="B" class="w-14 p-2 border border-slate-200 rounded-lg text-xs font-black text-blue-600 outline-none text-center">
+                        <input type="number" id="attended_${loc.id}" placeholder="A" class="w-14 p-2 border border-slate-200 rounded-lg text-xs font-black text-emerald-600 outline-none text-center">
+                    </div>
                 </div>
             `).join('');
         }
@@ -102,6 +109,7 @@
             const date = document.getElementById('report_date').value;
             const { data: { user } } = await supabaseClient.auth.getUser();
             const { data: report } = await supabaseClient.from('daily_reports').select('*, report_details(*)').eq('employee_email', user.email).eq('report_date', date).maybeSingle();
+            
             if (report) {
                 currentReportId = report.id;
                 document.getElementById('total_calls').value = report.total_calls;
@@ -111,38 +119,49 @@
                     if(document.getElementById(`booked_${d.location_id}`)) document.getElementById(`booked_${d.location_id}`).value = d.booked_count;
                     if(document.getElementById(`attended_${d.location_id}`)) document.getElementById(`attended_${d.location_id}`).value = d.attended_count;
                 });
+                document.getElementById('btn-submit').innerText = "Cập nhật dữ liệu";
+            } else {
+                currentReportId = null;
+                document.getElementById('total_calls').value = ""; document.getElementById('successful_calls').value = "";
+                document.getElementById('remarks').value = "";
+                locations.forEach(loc => {
+                    document.getElementById(`booked_${loc.id}`).value = "";
+                    document.getElementById(`attended_${loc.id}`).value = "";
+                });
+                document.getElementById('btn-submit').innerText = "Lưu báo cáo mới";
             }
         }
 
         async function submitReport() {
             const btn = document.getElementById('btn-submit');
             btn.disabled = true; btn.innerText = "ĐANG LƯU...";
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const date = document.getElementById('report_date').value;
-
-            const reportData = {
-                employee_email: user.email, report_date: date,
-                total_calls: parseInt(document.getElementById('total_calls').value) || 0,
-                successful_calls: parseInt(document.getElementById('successful_calls').value) || 0,
-                remarks: document.getElementById('remarks').value
-            };
-
-            let rId = currentReportId;
-            if (currentReportId) {
-                await supabaseClient.from('daily_reports').update(reportData).eq('id', currentReportId);
-                await supabaseClient.from('report_details').delete().eq('report_id', currentReportId);
-            } else {
-                const { data: nr } = await supabaseClient.from('daily_reports').insert([reportData]).select().single();
-                rId = nr.id;
-            }
-
-            const details = locations.map(loc => ({
-                report_id: rId, location_id: loc.id,
-                booked_count: parseInt(document.getElementById(`booked_${loc.id}`).value) || 0,
-                attended_count: parseInt(document.getElementById(`attended_${loc.id}`).value) || 0
-            }));
-            await supabaseClient.from('report_details').insert(details);
-            alert("Đã lưu!"); btn.disabled = false;
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                const date = document.getElementById('report_date').value;
+                const reportData = {
+                    employee_email: user.email, report_date: date,
+                    total_calls: parseInt(document.getElementById('total_calls').value) || 0,
+                    successful_calls: parseInt(document.getElementById('successful_calls').value) || 0,
+                    remarks: document.getElementById('remarks').value
+                };
+                let rId = currentReportId;
+                if (currentReportId) {
+                    await supabaseClient.from('daily_reports').update(reportData).eq('id', currentReportId);
+                    await supabaseClient.from('report_details').delete().eq('report_id', currentReportId);
+                } else {
+                    const { data: nr } = await supabaseClient.from('daily_reports').insert([reportData]).select().single();
+                    rId = nr.id;
+                }
+                const details = locations.map(loc => ({
+                    report_id: rId, location_id: loc.id,
+                    booked_count: parseInt(document.getElementById(`booked_${loc.id}`).value) || 0,
+                    attended_count: parseInt(document.getElementById(`attended_${loc.id}`).value) || 0
+                }));
+                await supabaseClient.from('report_details').insert(details);
+                alert("Đã lưu thành công!");
+                loadExistingData();
+            } catch (e) { alert("Lỗi lưu dữ liệu!"); }
+            btn.disabled = false;
         }
 
         window.onload = checkUser;
