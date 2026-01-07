@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống Báo Cáo Tổng Hợp & Pivot</title>
+    <title>Báo Cáo Quản Trị Hệ Thống</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,120 +13,169 @@
         
         <div class="bg-slate-900 p-8 rounded-[40px] text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-                <h1 class="text-3xl font-black italic uppercase tracking-tighter">Analytics Hub</h1>
-                <p id="period-label" class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.2em]">Đang xem: Tháng này</p>
+                <h1 class="text-3xl font-black italic uppercase tracking-tighter">Analytics Center</h1>
+                <p id="period-label" class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.2em]">Dữ liệu hệ thống</p>
             </div>
-            <div class="flex flex-wrap gap-2 bg-white/5 p-2 rounded-2xl border border-white/10">
+            
+            <div class="flex flex-wrap gap-3 items-center bg-white/5 p-3 rounded-3xl border border-white/10">
+                <select id="year-filter" onchange="loadData()" class="bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="2026">Năm 2026</option>
+                    <option value="2025">Năm 2025</option>
+                    <option value="2024">Năm 2024</option>
+                </select>
+
+                <div class="h-6 w-[1px] bg-white/10 mx-2"></div>
+
                 <button onclick="loadData('week')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-white hover:text-slate-900 transition-all">Tuần này</button>
                 <button onclick="loadData('month')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-white hover:text-slate-900 transition-all">Tháng này</button>
-                <button onclick="loadData('year')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-white hover:text-slate-900 transition-all">Năm nay</button>
+                <button onclick="location.href='index.html'" class="bg-blue-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase italic">Trang chủ</button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
-            <div class="p-4 bg-blue-50/50 rounded-2xl">
-                <h4 class="text-[10px] font-black text-blue-600 uppercase mb-2 italic">● Kết quả (Output)</h4>
-                <p class="text-[11px] text-slate-600"><b>Thành công:</b> Số khách đã đến thực tế.<br><b>Tỉ lệ chốt:</b> Hiệu quả dựa trên tổng cuộc gọi.</p>
+            <div class="p-4 bg-blue-50/50 rounded-2xl border-l-4 border-blue-400">
+                <h4 class="text-[10px] font-black text-blue-600 uppercase mb-1 italic tracking-widest">● KẾT QUẢ (OUTPUT)</h4>
+                <p class="text-[11px] text-slate-600"><b>Thành công:</b> Khách thực tế đã đến chi nhánh.<br><b>% Chốt:</b> Hiệu quả dựa trên tổng cuộc gọi.</p>
             </div>
-            <div class="p-4 bg-orange-50/50 rounded-2xl border-l-4 border-orange-200">
-                <h4 class="text-[10px] font-black text-orange-600 uppercase mb-2 italic">● Chất lượng Leads</h4>
-                <p class="text-[11px] text-slate-600"><b>Warm/Hot:</b> Khách hàng tiềm năng cao.<br><b>Follow-up:</b> Cần chăm sóc lại trong 24h.</p>
+            <div class="p-4 bg-orange-50/50 rounded-2xl border-l-4 border-orange-400">
+                <h4 class="text-[10px] font-black text-orange-600 uppercase mb-1 italic tracking-widest">● CHẤT LƯỢNG (LEADS)</h4>
+                <p class="text-[11px] text-slate-600"><b>Warm/Hot:</b> Khách hàng có độ quan tâm cao.<br><b>Follow-up:</b> Khách cần chăm sóc lại.</p>
             </div>
-            <div class="p-4 bg-red-50/50 rounded-2xl">
-                <h4 class="text-[10px] font-black text-red-600 uppercase mb-2 italic">● Hao hụt (Loss)</h4>
-                <p class="text-[11px] text-slate-600"><b>Lỗi số:</b> Tỉ lệ data sai hoặc không nhấc máy (No Answer).</p>
+            <div class="p-4 bg-red-50/50 rounded-2xl border-l-4 border-red-400">
+                <h4 class="text-[10px] font-black text-red-600 uppercase mb-1 italic tracking-widest">● HAO HỤT (LOSS)</h4>
+                <p class="text-[11px] text-slate-600"><b>No Ans/Wrong No:</b> Tỉ lệ data lỗi hoặc khách không phản hồi.</p>
             </div>
         </div>
 
         <div class="grid lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-[40px] shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-6 bg-slate-900 text-white font-black italic uppercase text-xs tracking-widest">Pivot: Hiệu suất Nhân viên</div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-50 text-[9px] font-black uppercase text-slate-500 border-b">
-                            <tr><th class="p-4">Nhân viên</th><th class="p-4 text-center">Tổng Call</th><th class="p-4 text-center">Thành công</th><th class="p-4 text-center">% Chốt</th></tr>
-                        </thead>
-                        <tbody id="pivot-staff-body"></tbody>
-                    </table>
-                </div>
+                <div class="p-6 bg-slate-900 text-white font-black italic uppercase text-xs tracking-widest">Báo cáo hiệu suất Nhân viên</div>
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-[9px] font-black uppercase text-slate-500 border-b">
+                        <tr>
+                            <th class="p-4">Nhân viên (Full Name)</th>
+                            <th class="p-4 text-center">Tổng Call</th>
+                            <th class="p-4 text-center">Thành công</th>
+                            <th class="p-4 text-center">% Chốt</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pivot-staff-body"></tbody>
+                </table>
             </div>
+
             <div class="bg-white rounded-[40px] shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-6 bg-slate-100 font-black italic uppercase text-xs tracking-widest text-slate-600">Pivot: Xu hướng thời gian</div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-50 text-[9px] font-black uppercase text-slate-500 border-b">
-                            <tr><th class="p-4">Ngày/Tháng</th><th class="p-4 text-center">Call</th><th class="p-4 text-center">Thành công</th><th class="p-4 text-center">Hot Leads</th></tr>
-                        </thead>
-                        <tbody id="pivot-time-body"></tbody>
-                    </table>
-                </div>
+                <div class="p-6 bg-slate-100 font-black italic uppercase text-xs tracking-widest text-slate-600">Báo cáo theo Thời gian</div>
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-[9px] font-black uppercase text-slate-500 border-b">
+                        <tr>
+                            <th class="p-4">Giai đoạn</th>
+                            <th class="p-4 text-center">Call</th>
+                            <th class="p-4 text-center">Success</th>
+                            <th class="p-4 text-center">Hot Leads</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pivot-time-body"></tbody>
+                </table>
             </div>
         </div>
 
         <div class="grid lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white p-6 rounded-[40px] shadow-sm border border-slate-200">
+            <div class="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-slate-200">
                 <canvas id="mainChart" height="120"></canvas>
             </div>
-            <div id="location-stats" class="space-y-4"></div>
+            <div id="location-stats" class="space-y-4">
+                </div>
         </div>
+
     </div>
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
         let myChart = null;
 
-        async function loadData(period = 'month') {
-            document.getElementById('period-label').innerText = `Đang xem: ${period === 'week' ? 'Tuần này' : period === 'year' ? 'Năm nay' : 'Tháng này'}`;
-            
+        async function loadData(mode = 'year') {
+            const year = document.getElementById('year-filter').value;
             let query = supabaseClient.from('daily_reports').select('*, report_details(*)');
-            const now = new Date();
-            if (period === 'week') query = query.gte('report_date', new Date(now.setDate(now.getDate() - 7)).toISOString());
-            else if (period === 'month') query = query.gte('report_date', new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
             
-            const { data, error } = await query.order('report_date', { ascending: false });
-            if (!error) renderAll(data);
+            // Xử lý lọc thời gian
+            const now = new Date();
+            if (mode === 'week') {
+                const weekStart = new Date(now.setDate(now.getDate() - 7)).toISOString();
+                query = query.gte('report_date', weekStart);
+            } else if (mode === 'month') {
+                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                query = query.gte('report_date', monthStart);
+            } else {
+                // Lọc theo năm đã chọn
+                query = query.gte('report_date', `${year}-01-01`).lte('report_date', `${year}-12-31`);
+            }
+
+            const { data, error } = await query.order('report_date', { ascending: true });
+            if (!error) renderReports(data);
         }
 
-        function renderAll(data) {
-            const staffMap = {};
-            const timeMap = {};
+        // Hàm chuyển đổi email thành Tên đầy đủ đẹp hơn
+        function formatFullName(email) {
+            if (!email) return "ẨN DANH";
+            let name = email.split('@')[0]; // Lấy phần trước @
+            name = name.replace(/[\._-]/g, ' '); // Thay dấu chấm, gạch ngang thành dấu cách
+            return name.toUpperCase(); // Viết hoa toàn bộ
+        }
+
+        function renderReports(data) {
+            const staffPivot = {};
+            const timePivot = {};
 
             data.forEach(r => {
-                // Logic Pivot Staff
-                const name = r.employee_email.split('@')[0].toUpperCase();
-                if (!staffMap[name]) staffMap[name] = { calls: 0, success: 0 };
-                staffMap[name].calls += r.total_calls;
-                staffMap[name].success += r.successful_calls;
+                // Chỉ xử lý dữ liệu có Total Calls > 0 (Dọn dẹp hiển thị)
+                if (r.total_calls <= 0) return;
 
-                // Logic Pivot Time
-                const date = r.report_date;
-                if (!timeMap[date]) timeMap[date] = { calls: 0, success: 0, hot: 0 };
-                timeMap[date].calls += r.total_calls;
-                timeMap[date].success += r.successful_calls;
-                timeMap[date].hot += r.hot_leads;
+                const fullName = formatFullName(r.employee_email);
+                if (!staffPivot[fullName]) staffPivot[fullName] = { c: 0, s: 0 };
+                staffPivot[fullName].c += r.total_calls;
+                staffPivot[fullName].s += r.successful_calls;
+
+                const dateKey = r.report_date;
+                if (!timePivot[dateKey]) timePivot[dateKey] = { c: 0, s: 0, h: 0 };
+                timePivot[dateKey].c += r.total_calls;
+                timePivot[dateKey].s += r.successful_calls;
+                timePivot[dateKey].h += r.hot_leads;
             });
 
-            // Render Staff Table
-            document.getElementById('pivot-staff-body').innerHTML = Object.entries(staffMap).map(([n, v]) => `
+            // Render Pivot Nhân Viên
+            document.getElementById('pivot-staff-body').innerHTML = Object.entries(staffPivot).map(([name, v]) => `
                 <tr class="border-t hover:bg-slate-50 font-bold">
-                    <td class="p-4 text-xs italic">${n}</td>
-                    <td class="p-4 text-center">${v.calls}</td>
-                    <td class="p-4 text-center text-blue-600">${v.success}</td>
-                    <td class="p-4 text-center"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-[10px]">${((v.success/(v.calls||1))*100).toFixed(1)}%</span></td>
+                    <td class="p-4 text-xs italic text-slate-800">${name}</td>
+                    <td class="p-4 text-center">${v.c}</td>
+                    <td class="p-4 text-center text-blue-600">${v.s}</td>
+                    <td class="p-4 text-center"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px]">${((v.s/(v.c||1))*100).toFixed(1)}%</span></td>
                 </tr>`).join('');
 
-            // Render Time Table
-            document.getElementById('pivot-time-body').innerHTML = Object.entries(timeMap).map(([t, v]) => `
+            // Render Pivot Thời Gian
+            document.getElementById('pivot-time-body').innerHTML = Object.entries(timePivot).reverse().map(([date, v]) => `
                 <tr class="border-t hover:bg-slate-50">
-                    <td class="p-4 text-xs font-bold text-slate-500">${t}</td>
-                    <td class="p-4 text-center">${v.calls}</td>
-                    <td class="p-4 text-center text-blue-600 font-bold">${v.success}</td>
-                    <td class="p-4 text-center text-red-500 font-bold">${v.hot}</td>
+                    <td class="p-4 text-[11px] font-bold text-slate-500">${date}</td>
+                    <td class="p-4 text-center font-bold">${v.c}</td>
+                    <td class="p-4 text-center text-blue-600 font-black">${v.s}</td>
+                    <td class="p-4 text-center text-red-500 font-black">${v.h}</td>
                 </tr>`).join('');
 
-            // ... (Phần code Chart & Location giữ nguyên như cũ)
+            // Cập nhật Chart
+            if (myChart) myChart.destroy();
+            myChart = new Chart(document.getElementById('mainChart'), {
+                type: 'line',
+                data: {
+                    labels: data.map(r => r.report_date),
+                    datasets: [
+                        { label: 'Success', data: data.map(r => r.successful_calls), borderColor: '#3b82f6', tension: 0.4, borderWeight: 4 },
+                        { label: 'Hot Leads', data: data.map(r => r.hot_leads), borderColor: '#ef4444', tension: 0.4, borderWeight: 2, borderDash: [5,5] }
+                    ]
+                },
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } } } }
+            });
         }
-        window.onload = () => loadData('month');
+
+        window.onload = () => loadData();
     </script>
 </body>
 </html>
