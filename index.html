@@ -13,7 +13,7 @@
         
         <div class="text-center mb-6">
             <h1 class="text-2xl font-black text-blue-700 uppercase tracking-tighter italic">Call Tracking</h1>
-            <div id="status-badge" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Hệ thống nội bộ</div>
+            <div id="status-badge" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1 italic">Hệ thống nội bộ</div>
         </div>
 
         <div id="login-section" class="py-12 text-center hidden">
@@ -23,14 +23,13 @@
         </div>
 
         <div id="request-access-section" class="hidden py-10 text-center space-y-4">
-            <div class="bg-amber-50 p-6 rounded-2xl border border-amber-100">
-                <p class="text-amber-700 font-bold text-sm">Bạn chưa có quyền truy cập hệ thống.</p>
-                <p class="text-[10px] text-amber-600 mt-1 uppercase font-black">Vui lòng gửi yêu cầu để Admin phê duyệt</p>
+            <div class="bg-amber-50 p-6 rounded-2xl border border-amber-100 text-amber-700 font-bold text-sm">
+                Bạn chưa có quyền truy cập hệ thống.
             </div>
             <button onclick="requestAccess()" id="btn-request" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg uppercase italic">
                 Gửi yêu cầu cấp quyền
             </button>
-            <button onclick="signOut()" class="text-xs font-bold text-slate-400 underline uppercase">Đăng nhập tài khoản khác</button>
+            <button onclick="signOut()" class="text-xs font-bold text-slate-400 underline uppercase">Thoát</button>
         </div>
 
         <div id="form-section" class="hidden space-y-5">
@@ -58,7 +57,9 @@
 
             <textarea id="remarks" class="w-full p-3 bg-slate-50 rounded-2xl border border-slate-200 text-sm outline-none" rows="2" placeholder="Ghi chú..."></textarea>
 
-            <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl uppercase italic">Lưu Dữ Liệu</button>
+            <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl uppercase italic tracking-wider transition-all">
+                Lưu Dữ Liệu
+            </button>
         </div>
     </div>
 
@@ -73,83 +74,40 @@
 
         async function checkUser() {
             const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) {
-                document.getElementById('login-section').classList.remove('hidden');
-                return;
-            }
+            if (!user) { document.getElementById('login-section').classList.remove('hidden'); return; }
 
-            // Kiểm tra quyền từ Database
             const { data: perm } = await supabaseClient.from('user_permissions').select('*').eq('email', user.email).maybeSingle();
 
             if (!perm) {
-                // TRƯỜNG HỢP 1: Người mới hoàn toàn -> Hiện màn hình yêu cầu cấp quyền
                 document.getElementById('request-access-section').classList.remove('hidden');
-                document.getElementById('status-badge').innerText = "Truy cập bị chặn";
-            } 
-            else if (perm.role === 'pending') {
-                // TRƯỜNG HỢP 2: Đã gửi yêu cầu nhưng đang chờ duyệt
+            } else if (perm.role === 'pending') {
                 document.getElementById('request-access-section').classList.remove('hidden');
                 document.getElementById('btn-request').innerText = "ĐANG CHỜ DUYỆT...";
                 document.getElementById('btn-request').disabled = true;
-                document.getElementById('btn-request').className = "w-full bg-slate-300 text-white py-4 rounded-2xl font-black uppercase cursor-not-allowed";
-                document.getElementById('status-badge').innerText = "Yêu cầu đang được xử lý";
-            } 
-            else {
-                // TRƯỜNG HỢP 3: Đã được duyệt (Staff/Admin)
+                document.getElementById('btn-request').classList.add('opacity-50');
+            } else {
                 userRole = perm.role;
                 document.getElementById('form-section').classList.remove('hidden');
                 document.getElementById('user-email').innerText = user.email;
-                document.getElementById('status-badge').innerText = userRole === 'admin' ? "Quyền Quản Trị" : "Nhân Viên";
-                document.getElementById('status-badge').classList.replace('text-slate-400', 'text-emerald-500');
-
                 if (userRole === 'admin') document.getElementById('admin-btn').classList.remove('hidden');
-
                 document.getElementById('report_date').valueAsDate = new Date();
                 await loadLocations();
                 await loadExistingData();
             }
         }
 
-        // HÀM GỬI YÊU CẦU CẤP QUYỀN (CHỈ LƯU VÀO DB KHI BẤM NÚT NÀY)
-        async function requestAccess() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const btn = document.getElementById('btn-request');
-            btn.disabled = true; btn.innerText = "ĐANG GỬI...";
-
-            const { error } = await supabaseClient.from('user_permissions').insert([{ 
-                email: user.email, 
-                full_name: user.user_metadata.full_name || 'User Mới', 
-                role: 'pending' 
-            }]);
-
-            if (!error) {
-                alert("Yêu cầu đã được gửi! Vui lòng chờ Admin phê duyệt.");
-                window.location.reload();
-            } else {
-                alert("Lỗi gửi yêu cầu!");
-                btn.disabled = false; btn.innerText = "GỬI LẠI YÊU CẦU";
-            }
-        }
-
-        // CÁC HÀM LOAD VÀ LƯU DỮ LIỆU GIỮ NGUYÊN
         async function loadLocations() {
             const { data } = await supabaseClient.from('locations').select('*').eq('is_active', true).order('id');
             locations = data || [];
             const container = document.getElementById('location-inputs');
-            container.innerHTML = '<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 italic">Chi tiết cơ sở:</h4>';
+            container.innerHTML = '<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Chi tiết cơ sở:</h4>';
             locations.forEach(loc => {
                 container.insertAdjacentHTML('beforeend', `
-                    <div class="flex flex-col gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm transition-all hover:bg-white hover:border-blue-100">
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
                         <span class="text-[11px] font-black text-slate-700 uppercase italic">${loc.name}</span>
-                        <div class="flex gap-4">
-                            <div class="flex-1 relative">
-                                <label class="absolute -top-2 left-2 bg-white px-1 text-[8px] font-bold text-blue-500 uppercase tracking-tighter shadow-sm border border-slate-50 rounded">Booked</label>
-                                <input type="number" id="booked_${loc.id}" placeholder="0" class="w-full p-2.5 pt-3 border border-slate-200 rounded-xl text-sm font-black text-blue-600 outline-none focus:border-blue-400 bg-white">
-                            </div>
-                            <div class="flex-1 relative">
-                                <label class="absolute -top-2 left-2 bg-white px-1 text-[8px] font-bold text-emerald-500 uppercase tracking-tighter shadow-sm border border-slate-50 rounded">Attended</label>
-                                <input type="number" id="attended_${loc.id}" placeholder="0" class="w-full p-2.5 pt-3 border border-slate-200 rounded-xl text-sm font-black text-emerald-600 outline-none focus:border-emerald-400 bg-white">
-                            </div>
+                        <div class="flex gap-4 mt-2">
+                            <input type="number" id="booked_${loc.id}" placeholder="Booked" class="w-full p-2 border rounded-xl text-sm font-bold text-blue-600 outline-none">
+                            <input type="number" id="attended_${loc.id}" placeholder="Attended" class="w-full p-2 border rounded-xl text-sm font-bold text-emerald-600 outline-none">
                         </div>
                     </div>
                 `);
@@ -160,6 +118,17 @@
             const date = document.getElementById('report_date').value;
             const { data: { user } } = await supabaseClient.auth.getUser();
             const { data: report } = await supabaseClient.from('daily_reports').select('*, report_details(*)').eq('employee_email', user.email).eq('report_date', date).maybeSingle();
+            
+            // Reset form
+            currentReportId = null;
+            document.getElementById('total_calls').value = "";
+            document.getElementById('successful_calls').value = "";
+            document.getElementById('remarks').value = "";
+            locations.forEach(loc => {
+                document.getElementById(`booked_${loc.id}`).value = "";
+                document.getElementById(`attended_${loc.id}`).value = "";
+            });
+
             if (report) {
                 currentReportId = report.id;
                 document.getElementById('total_calls').value = report.total_calls;
@@ -169,39 +138,71 @@
                     if(document.getElementById(`booked_${d.location_id}`)) document.getElementById(`booked_${d.location_id}`).value = d.booked_count;
                     if(document.getElementById(`attended_${d.location_id}`)) document.getElementById(`attended_${d.location_id}`).value = d.attended_count;
                 });
+                document.getElementById('btn-submit').innerText = "Cập nhật dữ liệu";
+            } else {
+                document.getElementById('btn-submit').innerText = "Lưu báo cáo mới";
             }
         }
 
         async function submitReport() {
             const btn = document.getElementById('btn-submit');
-            btn.disabled = true; btn.innerText = "ĐANG LƯU...";
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "ĐANG LƯU...";
+
             try {
                 const { data: { user } } = await supabaseClient.auth.getUser();
                 const date = document.getElementById('report_date').value;
+                
                 const reportData = {
-                    employee_email: user.email, report_date: date,
+                    employee_email: user.email,
+                    report_date: date,
                     total_calls: parseInt(document.getElementById('total_calls').value) || 0,
                     successful_calls: parseInt(document.getElementById('successful_calls').value) || 0,
                     remarks: document.getElementById('remarks').value
                 };
+
                 let rId = currentReportId;
+
                 if (currentReportId) {
-                    await supabaseClient.from('daily_reports').update(reportData).eq('id', currentReportId);
+                    const { error } = await supabaseClient.from('daily_reports').update(reportData).eq('id', currentReportId);
+                    if (error) throw error;
                     await supabaseClient.from('report_details').delete().eq('report_id', currentReportId);
                 } else {
-                    const { data: nr } = await supabaseClient.from('daily_reports').insert([reportData]).select().single();
-                    rId = nr.id;
+                    const { data, error } = await supabaseClient.from('daily_reports').insert([reportData]).select().single();
+                    if (error) throw error;
+                    rId = data.id;
                 }
+
                 const details = locations.map(loc => ({
-                    report_id: rId, location_id: loc.id,
+                    report_id: rId,
+                    location_id: loc.id,
                     booked_count: parseInt(document.getElementById(`booked_${loc.id}`).value) || 0,
                     attended_count: parseInt(document.getElementById(`attended_${loc.id}`).value) || 0
                 }));
-                await supabaseClient.from('report_details').insert(details);
-                alert("Lưu thành công!");
-                loadExistingData();
-            } catch (e) { alert("Lỗi lưu dữ liệu!"); }
-            btn.disabled = false;
+
+                const { error: dError } = await supabaseClient.from('report_details').insert(details);
+                if (dError) throw dError;
+
+                alert("✅ Lưu thành công!");
+                await loadExistingData(); // Cập nhật lại giao diện
+            } catch (err) {
+                console.error(err);
+                alert("❌ LỖI: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        }
+
+        async function requestAccess() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            const { error } = await supabaseClient.from('user_permissions').insert([{ 
+                email: user.email, 
+                full_name: user.user_metadata.full_name, 
+                role: 'pending' 
+            }]);
+            if (!error) { alert("Đã gửi yêu cầu!"); window.location.reload(); }
         }
 
         window.onload = checkUser;
