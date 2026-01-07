@@ -3,143 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Trị - Call Tracking</title>
+    <title>Admin Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 p-4 sm:p-10 font-sans text-slate-900">
-    <div id="admin-container" class="hidden max-w-4xl mx-auto">
+<body class="bg-slate-50 p-4 sm:p-8 font-sans">
+    <div class="max-w-5xl mx-auto space-y-8">
         
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center bg-slate-900 p-6 rounded-3xl shadow-xl text-white">
             <div>
-                <h2 class="text-2xl font-black text-slate-800 uppercase italic tracking-tighter">Quản Trị Nhân Viên</h2>
-                <p class="text-xs text-slate-500 font-medium">Phê duyệt và phân quyền truy cập hệ thống</p>
+                <h1 class="text-2xl font-black uppercase italic tracking-tighter">Admin Dashboard</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Quản lý quyền và hệ thống</p>
             </div>
-            <div class="flex gap-2 w-full sm:w-auto">
-                <button onclick="loadUsers()" class="flex-1 sm:flex-none bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 transition-all">Làm mới</button>
-                <a href="index.html" class="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase text-center shadow-lg shadow-blue-200">Về trang chủ</a>
+            <a href="index.html" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-xs font-black uppercase italic transition-all">Quay lại</a>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                <h2 class="text-sm font-black uppercase mb-6 text-slate-500 italic border-b pb-2">Phê duyệt nhân viên mới</h2>
+                <div id="pending-users" class="space-y-4">
+                    <p class="text-xs text-slate-400 italic">Đang tải dữ liệu...</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                <h2 class="text-sm font-black uppercase mb-6 text-slate-500 italic border-b pb-2">Danh sách cơ sở</h2>
+                <div class="flex gap-2 mb-6">
+                    <input type="text" id="new-location-name" placeholder="Tên cơ sở mới..." class="flex-1 bg-slate-50 border-none p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    <button onclick="addLocation()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-md hover:bg-blue-700">Thêm</button>
+                </div>
+                <div id="location-list" class="space-y-3">
+                    </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+            <h2 class="text-sm font-black uppercase mb-6 text-slate-500 italic border-b pb-2">Nhân sự đã cấp quyền</h2>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left">
                     <thead>
-                        <tr class="bg-slate-900 text-white text-[10px] uppercase tracking-widest">
-                            <th class="p-4 italic">Nhân viên</th>
-                            <th class="p-4">Trạng thái hiện tại</th>
-                            <th class="p-4 text-right">Hành động phê duyệt</th>
+                        <tr class="text-[10px] uppercase font-black text-slate-400">
+                            <th class="p-3">Họ Tên</th>
+                            <th class="p-3">Email</th>
+                            <th class="p-3">Quyền</th>
+                            <th class="p-3 text-right">Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody id="user-list-body" class="divide-y divide-slate-100 text-sm">
+                    <tbody id="active-users" class="text-sm">
                         </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <div id="loading-screen" class="flex items-center justify-center min-h-screen">
-        <p class="text-slate-400 font-bold animate-pulse">Đang kiểm tra quyền quản trị...</p>
-    </div>
-
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-        // 1. KIỂM TRA QUYỀN ADMIN KHI VÀO TRANG
-        async function checkAdminAuth() {
+        async function checkAdmin() {
             const { data: { user } } = await supabaseClient.auth.getUser();
-            
-            if (!user) {
-                window.location.href = 'index.html';
-                return;
-            }
-
-            const { data: perm, error } = await supabaseClient.from('user_permissions')
-                .select('role')
-                .eq('email', user.email)
-                .maybeSingle();
-
+            if (!user) { window.location.href = 'index.html'; return; }
+            const { data: perm } = await supabaseClient.from('user_permissions').select('role').eq('email', user.email).single();
             if (!perm || perm.role !== 'admin') {
-                alert("TRUY CẬP BỊ TỪ CHỐI: Bạn không có quyền Admin.");
+                alert("Bạn không có quyền truy cập trang này!");
                 window.location.href = 'index.html';
             } else {
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('admin-container').classList.remove('hidden');
-                loadUsers();
+                loadPendingUsers();
+                loadActiveUsers();
+                loadLocations();
             }
         }
 
-        // 2. TẢI DANH SÁCH TẤT CẢ USER
-        async function loadUsers() {
-            const { data, error } = await supabaseClient.from('user_permissions')
-                .select('*')
-                .order('role', { ascending: true }); // Hiện pending lên đầu
-
-            if (error) {
-                alert("Lỗi tải dữ liệu!");
+        // --- QUẢN LÝ USER ---
+        async function loadPendingUsers() {
+            const { data: users } = await supabaseClient.from('user_permissions').select('*').eq('role', 'pending');
+            const container = document.getElementById('pending-users');
+            if (!users || users.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic">Không có yêu cầu chờ duyệt.</p>';
                 return;
             }
+            container.innerHTML = users.map(u => `
+                <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100 space-y-3">
+                    <div class="text-xs font-mono text-blue-700">${u.email}</div>
+                    <div class="flex gap-2">
+                        <input type="text" id="name_${u.id}" value="${u.full_name || ''}" 
+                               class="flex-1 p-2 rounded-lg border-none text-sm font-bold outline-none" placeholder="Nhập Họ Tên...">
+                        <button onclick="approveUser('${u.id}', 'staff')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase">Duyệt Staff</button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-            const body = document.getElementById('user-list-body');
-            body.innerHTML = data.map(u => `
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="p-4">
-                        <div class="font-black text-slate-700">${u.email}</div>
-                        <div class="text-[10px] text-slate-400 font-medium">${u.full_name || 'Chưa cập nhật'}</div>
+        async function loadActiveUsers() {
+            const { data: users } = await supabaseClient.from('user_permissions').select('*').neq('role', 'pending').order('role');
+            const tbody = document.getElementById('active-users');
+            tbody.innerHTML = users.map(u => `
+                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-all">
+                    <td class="p-3">
+                        <input type="text" onchange="updateUserName('${u.id}', this.value)" value="${u.full_name || ''}" 
+                               class="bg-transparent border-none font-bold text-slate-700 outline-none focus:ring-1 focus:ring-blue-200 rounded px-1">
                     </td>
-                    <td class="p-4">
-                        <span class="inline-block px-2 py-1 rounded-md text-[10px] font-black uppercase ${getRoleClass(u.role)}">
-                            ${u.role}
-                        </span>
+                    <td class="p-3 font-mono text-xs text-slate-400">${u.email}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'}">${u.role}</span>
                     </td>
-                    <td class="p-4 text-right">
-                        <div class="flex justify-end gap-2">
-                            ${u.role === 'pending' ? `
-                                <button onclick="updateRole('${u.email}', 'staff')" class="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-600 shadow-sm">Duyệt Staff</button>
-                            ` : ''}
-                            
-                            ${u.role !== 'admin' ? `
-                                <button onclick="updateRole('${u.email}', 'admin')" class="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 shadow-sm">Lên Admin</button>
-                                <button onclick="deleteUser('${u.email}')" class="bg-white border border-red-200 text-red-500 text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-red-50">Xóa</button>
-                            ` : `<span class="text-[10px] font-bold text-slate-300 italic px-3 py-1.5 italic">Chủ sở hữu</span>`}
-                        </div>
+                    <td class="p-3 text-right">
+                        <button onclick="removeUser('${u.id}')" class="text-red-400 hover:text-red-600 text-[10px] font-bold uppercase">Xóa</button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function getRoleClass(role) {
-            if (role === 'admin') return 'bg-indigo-100 text-indigo-700';
-            if (role === 'staff') return 'bg-emerald-100 text-emerald-700';
-            return 'bg-amber-100 text-amber-700';
+        async function approveUser(id, role) {
+            const fullName = document.getElementById(`name_${id}`).value;
+            if (!fullName) { alert("Vui lòng nhập Họ Tên trước khi duyệt!"); return; }
+            await supabaseClient.from('user_permissions').update({ role, full_name: fullName }).eq('id', id);
+            loadPendingUsers(); loadActiveUsers();
         }
 
-        // 3. CẬP NHẬT QUYỀN (APPROVE)
-        async function updateRole(email, newRole) {
-            if (!confirm(`Xác nhận chuyển ${email} thành ${newRole.toUpperCase()}?`)) return;
-
-            const { error } = await supabaseClient.from('user_permissions')
-                .update({ role: newRole })
-                .eq('email', email);
-
-            if (error) alert("Lỗi: " + error.message);
-            else loadUsers();
+        async function updateUserName(id, newName) {
+            await supabaseClient.from('user_permissions').update({ full_name: newName }).eq('id', id);
         }
 
-        // 4. XÓA USER KHỎI DANH SÁCH
-        async function deleteUser(email) {
-            if (!confirm(`Bạn có chắc muốn xóa quyền của ${email}?`)) return;
-
-            const { error } = await supabaseClient.from('user_permissions')
-                .delete()
-                .eq('email', email);
-
-            if (error) alert("Lỗi: " + error.message);
-            else loadUsers();
+        async function removeUser(id) {
+            if(confirm("Xóa quyền truy cập của người này?")) {
+                await supabaseClient.from('user_permissions').delete().eq('id', id);
+                loadActiveUsers();
+            }
         }
 
-        window.onload = checkAdminAuth;
+        // --- QUẢN LÝ CƠ SỞ ---
+        async function loadLocations() {
+            const { data } = await supabaseClient.from('locations').select('*').order('id');
+            const container = document.getElementById('location-list');
+            container.innerHTML = data.map(loc => `
+                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <span class="text-sm font-bold text-slate-600 italic">${loc.name}</span>
+                    <button onclick="toggleLocation('${loc.id}', ${loc.is_active})" class="text-[9px] font-black uppercase ${loc.is_active ? 'text-emerald-600' : 'text-slate-400'}">
+                        ${loc.is_active ? '● Hoạt động' : '○ Đang ẩn'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function addLocation() {
+            const name = document.getElementById('new-location-name').value;
+            if (!name) return;
+            await supabaseClient.from('locations').insert([{ name, is_active: true }]);
+            document.getElementById('new-location-name').value = '';
+            loadLocations();
+        }
+
+        async function toggleLocation(id, currentStatus) {
+            await supabaseClient.from('locations').update({ is_active: !currentStatus }).eq('id', id);
+            loadLocations();
+        }
+
+        window.onload = checkAdmin;
     </script>
 </body>
 </html>
