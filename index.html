@@ -62,16 +62,31 @@
                     </h3>
                     <form id="report-form" class="space-y-4 opacity-30 pointer-events-none transition-all duration-500" onsubmit="saveReport(event)">
                         <input type="hidden" id="report-date">
-                        <div>
-                            <label class="text-[10px] font-black uppercase ml-1 text-slate-500 italic">Tổng cuộc gọi (Call)</label>
-                            <input type="number" id="total_calls" required class="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-black text-lg">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black uppercase ml-1 text-slate-500 italic">Thành công (Success)</label>
-                            <input type="number" id="success_calls" required class="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-black text-lg">
-                        </div>
-                        <div id="location-inputs" class="space-y-4 pt-4 border-t border-slate-100">
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black uppercase ml-1 text-slate-500 italic">Tổng Call</label>
+                                <input type="number" id="total_calls" required class="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-black text-lg">
                             </div>
+                            <div>
+                                <label class="text-[10px] font-black uppercase ml-1 text-slate-500 italic">Thành công</label>
+                                <input type="number" id="success_calls" required class="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-black text-lg">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black uppercase ml-1 text-orange-600 italic">Warm Leads</label>
+                                <input type="number" id="warm_leads" required class="w-full bg-orange-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-orange-500 font-black text-lg">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black uppercase ml-1 text-red-600 italic">Hot Leads</label>
+                                <input type="number" id="hot_leads" required class="w-full bg-red-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-red-500 font-black text-lg">
+                            </div>
+                        </div>
+
+                        <div id="location-inputs" class="space-y-4 pt-4 border-t border-slate-100">
+                        </div>
                         <button type="submit" class="w-full bg-slate-900 text-white p-5 rounded-2xl font-black uppercase italic tracking-widest shadow-xl hover:bg-blue-600 transition-all mt-4 transform active:scale-95">Lưu báo cáo</button>
                     </form>
                 </div>
@@ -86,57 +101,31 @@
         async function login() { await supabaseClient.auth.signInWithOAuth({ provider: 'google' }); }
         async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
 
-async function checkAccess() {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        
-        // 1. Nếu chưa đăng nhập Google
-        if (!user) {
-            document.getElementById('login-section').classList.remove('hidden');
-            return;
+        async function checkAccess() {
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (!user) { document.getElementById('login-section').classList.remove('hidden'); return; }
+
+                const { data: perm, error } = await supabaseClient.from('user_permissions').select('*').ilike('email', user.email).maybeSingle();
+
+                if (error || !perm || !perm.role) {
+                    document.getElementById('denied-email').innerText = user.email;
+                    document.getElementById('denied-section').classList.remove('hidden');
+                    return;
+                }
+
+                document.getElementById('app-section').classList.remove('hidden');
+                document.getElementById('user-display-name').innerText = perm.full_name || user.email;
+                document.getElementById('user-email').innerText = user.email;
+
+                if (perm.role.includes('admin')) document.getElementById('admin-btn').classList.remove('hidden');
+                if (perm.role.includes('admin') || perm.role.includes('viewer')) document.getElementById('report-btn').classList.remove('hidden');
+                if (perm.role.includes('staff')) {
+                    document.getElementById('staff-view').classList.remove('hidden');
+                    initCalendar();
+                }
+            } catch (err) { console.error(err); }
         }
-
-        // 2. Truy vấn quyền từ Database
-        const { data: perm, error } = await supabaseClient
-            .from('user_permissions')
-            .select('*')
-            .ilike('email', user.email) // Không phân biệt hoa thường
-            .maybeSingle();
-
-        // 3. Xử lý trường hợp bị lỗi hoặc không có trong Whitelist
-        if (error || !perm || !perm.role) {
-            console.error("Lỗi hoặc không có quyền:", error);
-            
-            // Hiển thị màn hình Deny
-            document.getElementById('denied-email').innerText = user.email;
-            document.getElementById('denied-section').classList.remove('hidden');
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('app-section').classList.add('hidden');
-            return;
-        }
-
-        // 4. Nếu có quyền: Hiển thị giao diện chính
-        document.getElementById('app-section').classList.remove('hidden');
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('denied-section').classList.add('hidden');
-        
-        document.getElementById('user-display-name').innerText = perm.full_name || user.email;
-        document.getElementById('user-email').innerText = user.email;
-
-        const roles = perm.role;
-        // Hiển thị các nút chức năng theo Role
-        if (roles.includes('admin')) document.getElementById('admin-btn').classList.remove('hidden');
-        if (roles.includes('admin') || roles.includes('viewer')) document.getElementById('report-btn').classList.remove('hidden');
-        if (roles.includes('staff')) {
-            document.getElementById('staff-view').classList.remove('hidden');
-            initCalendar(); // Khởi tạo lịch nếu là nhân viên nhập liệu
-        }
-
-    } catch (err) {
-        console.error("Hệ thống gặp sự cố:", err);
-        alert("Có lỗi xảy ra khi kiểm tra quyền truy cập.");
-    }
-}
 
         function initCalendar() {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
@@ -159,30 +148,58 @@ async function checkAccess() {
             document.getElementById('selected-date').innerText = date;
             document.getElementById('report-date').value = date;
             document.getElementById('report-form').classList.remove('opacity-30', 'pointer-events-none');
+            
+            // Tải dữ liệu cũ nếu có để điền vào form
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            const { data: existing } = await supabaseClient.from('daily_reports').select('*, report_details(*)').eq('employee_email', user.email).eq('report_date', date).maybeSingle();
+
+            document.getElementById('total_calls').value = existing ? existing.total_calls : '';
+            document.getElementById('success_calls').value = existing ? existing.successful_calls : '';
+            document.getElementById('warm_leads').value = existing ? existing.warm_leads : '';
+            document.getElementById('hot_leads').value = existing ? existing.hot_leads : '';
+
             const { data: locs } = await supabaseClient.from('locations').select('*').eq('is_active', true);
-            document.getElementById('location-inputs').innerHTML = locs.map(l => `
+            document.getElementById('location-inputs').innerHTML = locs.map(l => {
+                const d = existing?.report_details?.find(rd => rd.location_id === l.id);
+                return `
                 <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
                     <label class="text-[9px] font-black uppercase text-slate-400 block mb-3 italic">${l.name}</label>
                     <div class="flex gap-3">
-                        <div class="flex-1"><span class="text-[8px] uppercase font-bold text-slate-400 block mb-1">Booked</span><input type="number" id="booked_${l.id}" required class="w-full p-3 rounded-xl border-none text-sm font-black outline-none focus:ring-2 focus:ring-blue-500"></div>
-                        <div class="flex-1"><span class="text-[8px] uppercase font-bold text-slate-400 block mb-1">Attended</span><input type="number" id="attended_${l.id}" required class="w-full p-3 rounded-xl border-none text-sm font-black outline-none focus:ring-2 focus:ring-blue-500"></div>
+                        <div class="flex-1"><span class="text-[8px] uppercase font-bold text-slate-400 block mb-1">Booked</span><input type="number" id="booked_${l.id}" value="${d?d.booked_count:''}" required class="w-full p-3 rounded-xl border-none text-sm font-black outline-none focus:ring-2 focus:ring-blue-500"></div>
+                        <div class="flex-1"><span class="text-[8px] uppercase font-bold text-slate-400 block mb-1">Attended</span><input type="number" id="attended_${l.id}" value="${d?d.attended_count:''}" required class="w-full p-3 rounded-xl border-none text-sm font-black outline-none focus:ring-2 focus:ring-blue-500"></div>
                     </div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         }
 
         async function saveReport(e) {
             e.preventDefault();
             const { data: { user } } = await supabaseClient.auth.getUser();
             const date = document.getElementById('report-date').value;
-            const calls = parseInt(document.getElementById('total_calls').value);
-            const successCalls = parseInt(document.getElementById('success_calls').value);
-
-            const { data: rData, error: rErr } = await supabaseClient.from('daily_reports').upsert([{ employee_email: user.email, report_date: date, total_calls: calls, successful_calls: successCalls }], { onConflict: 'employee_email,report_date' }).select().single();
             
+            const payload = {
+                employee_email: user.email,
+                report_date: date,
+                total_calls: parseInt(document.getElementById('total_calls').value),
+                successful_calls: parseInt(document.getElementById('success_calls').value),
+                warm_leads: parseInt(document.getElementById('warm_leads').value) || 0,
+                hot_leads: parseInt(document.getElementById('hot_leads').value) || 0
+            };
+
+            const { data: rData, error: rErr } = await supabaseClient.from('daily_reports').upsert([payload], { onConflict: 'employee_email,report_date' }).select().single();
+            
+            if (rErr) { alert("Lỗi lưu báo cáo chính!"); return; }
+
             const { data: locs } = await supabaseClient.from('locations').select('id').eq('is_active', true);
             for (const loc of locs) {
-                await supabaseClient.from('report_details').upsert([{ report_id: rData.id, location_id: loc.id, booked_count: parseInt(document.getElementById(`booked_${loc.id}`).value), attended_count: parseInt(document.getElementById(`attended_${loc.id}`).value) }], { onConflict: 'report_id,location_id' });
+                await supabaseClient.from('report_details').upsert([{ 
+                    report_id: rData.id, 
+                    location_id: loc.id, 
+                    booked_count: parseInt(document.getElementById(`booked_${loc.id}`).value) || 0, 
+                    attended_count: parseInt(document.getElementById(`attended_${loc.id}`).value) || 0 
+                }], { onConflict: 'report_id,location_id' });
             }
+            
             alert("Đã lưu dữ liệu ngày " + date);
             calendar.refetchEvents();
         }
@@ -191,5 +208,3 @@ async function checkAccess() {
     </script>
 </body>
 </html>
-
-
