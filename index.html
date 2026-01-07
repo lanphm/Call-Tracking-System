@@ -85,23 +85,48 @@
         async function signIn() { await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
         async function signOut() { await supabaseClient.auth.signOut(); window.location.reload(); }
 
-        async function checkUser() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) { document.getElementById('login-section').classList.remove('hidden'); return; }
-            const { data: perm } = await supabaseClient.from('user_permissions').select('*').eq('email', user.email).maybeSingle();
-            if (!perm || perm.role === 'pending') {
-                document.getElementById('request-access-section').classList.remove('hidden');
-                if (perm) { document.getElementById('btn-request').innerText = "ĐANG CHỜ DUYỆT..."; document.getElementById('btn-request').disabled = true; }
-            } else {
-                userRole = perm.role;
-                document.getElementById('form-section').classList.remove('hidden');
-                document.getElementById('user-email').innerText = user.email;
-                if (userRole === 'admin') document.getElementById('admin-btn').classList.remove('hidden');
-                await loadLocations();
-                initCalendar();
-                refreshCalendar();
-            }
+async function checkUser() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) { 
+        document.getElementById('login-section').classList.remove('hidden'); 
+        return; 
+    }
+
+    const { data: perm } = await supabaseClient.from('user_permissions').select('*').eq('email', user.email).maybeSingle();
+    
+    // Kiểm tra mảng role có rỗng hoặc chứa 'pending' không
+    const roles = Array.isArray(perm?.role) ? perm.role : [];
+
+    if (!perm || roles.length === 0 || roles.includes('pending')) {
+        document.getElementById('request-access-section').classList.remove('hidden');
+    } else {
+        document.getElementById('form-section').classList.remove('hidden');
+        document.getElementById('user-email').innerText = user.email;
+
+        // 1. Nút ADMIN: Chỉ hiện nếu có role 'admin'
+        if (roles.includes('admin')) {
+            document.getElementById('admin-btn').classList.remove('hidden');
         }
+
+        // 2. Nút BÁO CÁO: Hiện nếu là 'viewer' HOẶC 'admin'
+        const reportBtn = document.querySelector("button[onclick*='report.html']");
+        if (roles.includes('viewer') || roles.includes('admin')) {
+            reportBtn.classList.remove('hidden');
+        }
+
+        // 3. NHẬP LIỆU (Calendar): Chỉ hiện nếu có role 'staff'
+        if (roles.includes('staff')) {
+            initCalendar();
+            refreshCalendar();
+        } else {
+            document.getElementById('calendar').innerHTML = `
+                <div class="p-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                    <p class="text-xs font-bold text-slate-400 uppercase italic">Chế độ xem hạn chế</p>
+                    <p class="text-[10px] text-slate-400">Bạn không có quyền nhập liệu (Staff).</p>
+                </div>`;
+        }
+    }
+}
 
         function initCalendar() {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
@@ -236,4 +261,5 @@ async function refreshCalendar() {
     </script>
 </body>
 </html>
+
 
