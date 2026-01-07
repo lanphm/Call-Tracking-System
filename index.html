@@ -10,12 +10,10 @@
 </head>
 <body class="bg-slate-100 p-2 sm:p-4">
     <div id="app" class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-2xl min-h-[500px]">
-        <div class="text-center mb-6">
-            <h1 class="text-2xl font-black text-blue-700 uppercase">Báo Cáo Hiệu Suất</h1>
-        </div>
+        <h1 class="text-2xl font-black text-blue-700 uppercase text-center mb-6">Báo Cáo Hiệu Suất</h1>
 
         <div id="login-section" class="py-12 text-center">
-            <button onclick="signIn()" class="w-full bg-white border-2 border-slate-200 px-6 py-4 rounded-xl shadow-sm hover:border-blue-500 transition-all font-bold">
+            <button onclick="signIn()" class="w-full bg-white border-2 border-slate-200 px-6 py-4 rounded-xl shadow-sm font-bold">
                 Đăng nhập bằng Google
             </button>
         </div>
@@ -27,23 +25,20 @@
             </div>
 
             <div id="admin-tools" class="hidden grid grid-cols-2 gap-2">
-                <button onclick="location.href='report.html'" class="bg-emerald-600 text-white py-2 rounded-lg text-[10px] font-bold uppercase shadow">📊 Báo Cáo</button>
-                <button onclick="location.href='admin.html'" class="bg-indigo-600 text-white py-2 rounded-lg text-[10px] font-bold uppercase shadow">⚙️ Quản Trị</button>
+                <button onclick="location.href='report.html'" class="bg-emerald-600 text-white py-2 rounded-lg text-[10px] font-bold uppercase">📊 Báo Cáo</button>
+                <button onclick="location.href='admin.html'" class="bg-indigo-600 text-white py-2 rounded-lg text-[10px] font-bold uppercase">⚙️ Quản Trị</button>
             </div>
 
             <input type="date" id="report_date" onchange="loadExistingData()" class="w-full p-3 border-2 border-blue-100 rounded-xl font-black text-blue-900">
 
             <div class="grid grid-cols-2 gap-3">
-                <input type="number" id="total_calls" placeholder="Tổng gọi" class="p-3 border rounded-xl font-bold">
-                <input type="number" id="successful_calls" placeholder="Thành công" class="p-3 border rounded-xl font-bold text-emerald-600">
+                <input type="number" id="total_calls" placeholder="Tổng gọi" class="p-3 border rounded-xl font-bold text-lg">
+                <input type="number" id="successful_calls" placeholder="Thành công" class="p-3 border rounded-xl font-bold text-lg text-emerald-600">
             </div>
 
             <div id="location-inputs" class="space-y-2 border-t pt-2"></div>
 
-            <div class="pt-2">
-                <label class="text-[10px] font-black text-slate-400 uppercase">Ghi chú (Nghỉ/OFF/Lỗi...)</label>
-                <textarea id="remarks" class="w-full p-3 border rounded-xl text-sm mt-1 bg-slate-50" rows="2" placeholder="Nhập ghi chú..."></textarea>
-            </div>
+            <textarea id="remarks" class="w-full p-3 border rounded-xl text-sm mt-1 bg-slate-50" rows="2" placeholder="Ghi chú (Nghỉ/OFF/Lỗi...)"></textarea>
 
             <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-lg shadow-lg uppercase">Lưu Dữ Liệu</button>
         </div>
@@ -67,22 +62,30 @@
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return;
 
-            const { data: perm } = await supabaseClient.from('user_permissions').select('*').eq('email', user.email).maybeSingle();
+            // --- CHẾ ĐỘ PUBLIC: HIỆN FORM CHO MỌI EMAIL ---
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('form-section').classList.remove('hidden');
+            document.getElementById('user-email').innerText = user.email;
 
-            if (perm && (perm.role === 'staff' || perm.role === 'admin')) {
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('form-section').classList.remove('hidden');
-                document.getElementById('user-email').innerText = user.email;
-                if (perm.role === 'admin') document.getElementById('admin-tools').classList.remove('hidden');
-                
-                document.getElementById('report_date').valueAsDate = new Date();
-                await loadLocations();
-                await loadExistingData();
-            } else {
-                alert("Tài khoản chưa được phân quyền Staff/Admin!");
+            // Tự động thêm user mới vào database (nếu chưa có) để bạn Approve sau
+            await supabaseClient.from('user_permissions').insert([{ 
+                email: user.email, 
+                full_name: user.user_metadata.full_name,
+                role: 'pending' 
+            }]).select();
+
+            // QUY ĐỊNH ADMIN: Hãy thay email của bạn vào đây để thấy nút Quản trị
+            const myAdminEmail = "email-cua-ban@gmail.com"; 
+            if (user.email === myAdminEmail) {
+                document.getElementById('admin-tools').classList.remove('hidden');
             }
+
+            document.getElementById('report_date').valueAsDate = new Date();
+            await loadLocations();
+            await loadExistingData();
         }
 
+        // --- CÁC HÀM LƯU/LOAD DỮ LIỆU GIỮ NGUYÊN ---
         async function loadLocations() {
             const { data } = await supabaseClient.from('locations').select('*').eq('is_active', true).order('id');
             locations = data || [];
@@ -99,7 +102,6 @@
             const date = document.getElementById('report_date').value;
             const { data: { user } } = await supabaseClient.auth.getUser();
             const { data: report } = await supabaseClient.from('daily_reports').select('*, report_details(*)').eq('employee_email', user.email).eq('report_date', date).maybeSingle();
-
             if (report) {
                 currentReportId = report.id;
                 document.getElementById('total_calls').value = report.total_calls;
@@ -109,16 +111,6 @@
                     if(document.getElementById(`booked_${d.location_id}`)) document.getElementById(`booked_${d.location_id}`).value = d.booked_count;
                     if(document.getElementById(`attended_${d.location_id}`)) document.getElementById(`attended_${d.location_id}`).value = d.attended_count;
                 });
-                document.getElementById('btn-submit').innerText = "Cập nhật ngày " + date;
-            } else {
-                currentReportId = null;
-                document.getElementById('total_calls').value = ""; document.getElementById('successful_calls').value = "";
-                document.getElementById('remarks').value = "";
-                locations.forEach(loc => {
-                    document.getElementById(`booked_${loc.id}`).value = "";
-                    document.getElementById(`attended_${loc.id}`).value = "";
-                });
-                document.getElementById('btn-submit').innerText = "Lưu báo cáo mới";
             }
         }
 
@@ -129,8 +121,7 @@
             const date = document.getElementById('report_date').value;
 
             const reportData = {
-                employee_email: user.email,
-                report_date: date,
+                employee_email: user.email, report_date: date,
                 total_calls: parseInt(document.getElementById('total_calls').value) || 0,
                 successful_calls: parseInt(document.getElementById('successful_calls').value) || 0,
                 remarks: document.getElementById('remarks').value
@@ -146,16 +137,12 @@
             }
 
             const details = locations.map(loc => ({
-                report_id: rId,
-                location_id: loc.id,
+                report_id: rId, location_id: loc.id,
                 booked_count: parseInt(document.getElementById(`booked_${loc.id}`).value) || 0,
                 attended_count: parseInt(document.getElementById(`attended_${loc.id}`).value) || 0
             }));
-
             await supabaseClient.from('report_details').insert(details);
-            alert("Đã lưu!");
-            btn.disabled = false;
-            loadExistingData();
+            alert("Đã lưu!"); btn.disabled = false;
         }
 
         window.onload = checkUser;
