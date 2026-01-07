@@ -2,37 +2,16 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Quản Trị Hệ Thống</title>
+    <title>Quản Trị Nhân Viên</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="config.js"></script>
 </head>
-<body class="bg-gray-100 p-4">
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
-            <h1 class="font-black text-purple-700 uppercase tracking-tighter">Cài Đặt Hệ Thống</h1>
-            <a href="index.html" class="text-xs bg-gray-200 px-3 py-1 rounded font-bold uppercase">Quay lại</a>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h3 class="font-black text-gray-400 uppercase text-[11px] mb-4 tracking-widest">Duyệt & Phân Quyền NV</h3>
-                <div class="overflow-y-auto max-h-[400px]">
-                    <table class="min-w-full text-sm">
-                        <tbody id="user-list-body" class="divide-y divide-gray-100"></tbody>
-                    </table>
-                </div>
+<body class="bg-slate-50 p-6">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+        <h2 class="text-xl font-bold mb-6">Phê Duyệt Nhân Viên</h2>
+        <div id="user-list" class="space-y-4">
             </div>
-
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h3 class="font-black text-gray-400 uppercase text-[11px] mb-4 tracking-widest">Danh Mục Cơ Sở</h3>
-                <div class="flex gap-2 mb-4">
-                    <input type="text" id="new-loc-name" placeholder="Tên cơ sở..." class="border p-2 rounded flex-1 text-sm outline-none focus:border-blue-500">
-                    <button onclick="addLocation()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold shadow-sm">THÊM</button>
-                </div>
-                <div id="location-list" class="space-y-2 overflow-y-auto max-h-[300px]"></div>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -40,68 +19,27 @@
 
         async function loadUsers() {
             const { data } = await supabaseClient.from('user_permissions').select('*').order('role');
-            document.getElementById('user-list-body').innerHTML = data.map(u => `
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="py-3 pr-2">
-                        <p class="font-bold text-gray-800 text-xs">${u.full_name}</p>
-                        <p class="text-[9px] text-gray-400 font-mono">${u.email}</p>
-                    </td>
-                    <td class="py-3">
-                        ${u.role === 'pending' ? `
-                            <div class="flex flex-col gap-1">
-                                <button onclick="updateUser('${u.email}', 'staff')" class="bg-green-500 text-white px-2 py-1 rounded text-[9px] font-black uppercase shadow-sm">Staff</button>
-                                <button onclick="updateUser('${u.email}', 'admin')" class="bg-blue-500 text-white px-2 py-1 rounded text-[9px] font-black uppercase shadow-sm">Admin</button>
-                            </div>
-                        ` : `<span class="text-[9px] font-black uppercase bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">${u.role}</span>`}
-                    </td>
-                    <td class="py-3 text-right">
-                        <button onclick="deleteUser('${u.email}')" class="text-red-400 hover:text-red-600">
-                            <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        async function updateUser(email, role) {
-            await supabaseClient.from('user_permissions').update({ role }).eq('email', email);
-            loadUsers();
-        }
-
-        async function deleteUser(email) {
-            if(confirm('Chắc chắn xóa người này?')) {
-                await supabaseClient.from('user_permissions').delete().eq('email', email);
-                loadUsers();
-            }
-        }
-
-        async function loadLocations() {
-            const { data } = await supabaseClient.from('locations').select('*').order('id');
-            document.getElementById('location-list').innerHTML = data.map(l => `
-                <div class="p-3 bg-gray-50 border rounded-lg flex justify-between items-center hover:shadow-sm transition-all">
-                    <span class="font-bold text-gray-700 text-sm">${l.name}</span>
-                    <button onclick="toggleLoc(${l.id}, ${l.is_active})" class="text-[9px] font-black tracking-tighter ${l.is_active ? 'text-red-400' : 'text-green-500 underline'}">
-                        ${l.is_active ? 'TẠM ẨN' : 'KÍCH HOẠT'}
-                    </button>
+            document.getElementById('user-list').innerHTML = data.map(u => `
+                <div class="flex justify-between items-center p-4 border rounded">
+                    <div>
+                        <p class="font-bold">${u.email}</p>
+                        <p class="text-xs text-gray-500">Quyền hiện tại: <span class="uppercase">${u.role}</span></p>
+                    </div>
+                    ${u.role === 'pending' ? 
+                        `<button onclick="approve('${u.email}')" class="bg-blue-600 text-white px-4 py-1 rounded text-xs">APPROVE</button>` : 
+                        `<span class="text-green-600 text-xs font-bold">ĐÃ DUYỆT</span>`
+                    }
                 </div>
             `).join('');
         }
 
-        async function addLocation() {
-            const name = document.getElementById('new-loc-name').value;
-            if(name) {
-                await supabaseClient.from('locations').insert([{ name, is_active: true }]);
-                document.getElementById('new-loc-name').value = "";
-                loadLocations();
-            }
+        async function approve(email) {
+            await supabaseClient.from('user_permissions').update({ role: 'staff' }).eq('email', email);
+            alert("Đã duyệt " + email);
+            loadUsers();
         }
 
-        async function toggleLoc(id, current) {
-            await supabaseClient.from('locations').update({ is_active: !current }).eq('id', id);
-            loadLocations();
-        }
-
-        loadUsers(); loadLocations();
+        loadUsers();
     </script>
 </body>
 </html>
