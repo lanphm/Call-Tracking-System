@@ -90,7 +90,10 @@
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) { document.getElementById('login-section').classList.remove('hidden'); return; }
 
-            const { data: perm } = await supabaseClient.from('user_permissions').select('*').eq('email', user.email).maybeSingle();
+const { data: perm } = await supabaseClient.from('user_permissions')
+    .select('*')
+    .ilike('email', user.email) // Sử dụng ilike để không phân biệt hoa/thường
+    .maybeSingle();
             
             // Nếu email không có trong Whitelist (Admin chưa add)
             if (!perm || !perm.role || perm.role.length === 0) {
@@ -165,3 +168,4 @@
     </script>
 </body>
 </html>
+
