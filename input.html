@@ -9,19 +9,14 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <script src="./config.js"></script>
     <style>
-        .fc { max-height: 480px; font-size: 0.8rem; background: white; padding: 10px; border-radius: 25px; border: none; }
-        .has-data { background-color: #3b82f6 !important; border: none !important; color: white !important; font-size: 9px; font-weight: bold; }
-        input[type="number"]::-webkit-inner-spin-button { display: none; }
+        .fc { max-height: 450px; font-size: 0.8rem; background: white; padding: 10px; border-radius: 20px; }
+        .has-data { background-color: #3b82f6 !important; border: none !important; color: white !important; font-size: 9px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 pb-10">
-    <div class="max-w-6xl mx-auto p-3 sm:p-6 space-y-6">
-        
+    <div class="max-w-6xl mx-auto p-4 space-y-6">
         <div class="flex justify-between items-center bg-slate-900 p-6 rounded-[30px] text-white shadow-xl">
-            <div>
-                <h1 class="text-xl font-black italic uppercase tracking-tighter">Strategic Input</h1>
-                <p id="user-display" class="text-[9px] text-blue-400 font-bold uppercase tracking-widest italic opacity-70 italic">Xác thực...</p>
-            </div>
+            <h1 class="text-xl font-black italic uppercase italic">Daily Input</h1>
             <button onclick="location.href='index.html'" class="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase">Menu</button>
         </div>
 
@@ -31,58 +26,48 @@
             </div>
 
             <div class="lg:col-span-2 space-y-4">
-                <div class="bg-white p-6 rounded-[35px] shadow-sm border border-slate-200 space-y-5">
-                    <div class="flex justify-between items-center border-b border-slate-50 pb-4">
-                        <span id="date-label" class="font-black text-2xl text-slate-800 italic uppercase">Ngày</span>
-                        <div id="calc-ratio" class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-black italic shadow-lg shadow-blue-100">Ratio: 0%</div>
+                <div class="bg-white p-8 rounded-[40px] shadow-sm border border-slate-200 space-y-5">
+                    <div class="flex justify-between items-center">
+                        <span id="display-date" class="font-black text-2xl text-slate-900 italic">Chọn ngày...</span>
+                        <div id="calc-ratio" class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-black italic">Ratio: 0%</div>
                     </div>
+                    <input type="hidden" id="report_date">
+
+                    <div class="space-y-3 border-b pb-5">
+                        <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest italic">● Chỉ số cuộc gọi</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" id="total_calls" oninput="autoCalc()" placeholder="Tổng Call" class="bg-slate-50 p-4 rounded-2xl border-none font-bold outline-none">
+                            <input type="number" id="successful_calls" oninput="autoCalc()" placeholder="Thành công" class="bg-slate-50 p-4 rounded-2xl border-none font-bold outline-none text-green-600">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" id="warm_leads" placeholder="Warm Leads" class="bg-slate-50 p-4 rounded-2xl border-none font-bold outline-none">
+                            <input type="number" id="hot_leads" placeholder="Hot Leads" class="bg-slate-50 p-4 rounded-2xl border-none font-bold outline-none text-red-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" id="no_answer" placeholder="Ko nghe máy" class="bg-slate-50 p-3 rounded-2xl border-none font-bold outline-none text-xs">
+                            <input type="number" id="wrong_number" placeholder="Sai số" class="bg-slate-50 p-3 rounded-2xl border-none font-bold outline-none text-xs">
+                        </div>
+                        <input type="number" id="follow_ups" placeholder="Số ca Chăm sóc lại (Follow-ups)" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-bold outline-none text-amber-600">
+                    </div>
+
+                    <div class="space-y-3">
+                        <p class="text-[9px] font-black text-amber-500 uppercase tracking-widest italic italic">● Chi tiết hẹn theo chi nhánh</p>
+                        <select id="location_id" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-bold text-sm outline-none cursor-pointer"></select>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[8px] font-black text-slate-400 ml-2">Số lịch hẹn</label>
+                                <input type="number" id="booked_count" placeholder="0" class="w-full bg-slate-100 p-4 rounded-2xl border-none font-black text-lg outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black text-slate-400 ml-2">Số khách đến</label>
+                                <input type="number" id="attended_count" placeholder="0" class="w-full bg-slate-100 p-4 rounded-2xl border-none font-black text-lg outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <textarea id="remarks" rows="2" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-medium text-xs outline-none" placeholder="Ghi chú (Remarks)..."></textarea>
                     
-                    <input type="hidden" id="report-date">
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="col-span-1">
-                            <label class="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block">Tổng Call</label>
-                            <input type="number" id="total_calls" oninput="autoCalc()" placeholder="0" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-black text-xl text-blue-600 outline-none">
-                        </div>
-                        <div class="col-span-1">
-                            <label class="text-[8px] font-black uppercase text-green-500 ml-2 mb-1 block">Thành công</label>
-                            <input type="number" id="successful_calls" oninput="autoCalc()" placeholder="0" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-black text-xl text-green-600 outline-none">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block">Warm Leads</label>
-                            <input type="number" id="warm_leads" placeholder="0" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-black text-xl outline-none">
-                        </div>
-                        <div>
-                            <label class="text-[8px] font-black uppercase text-red-500 ml-2 mb-1 block">Hot Leads</label>
-                            <input type="number" id="hot_leads" placeholder="0" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-black text-xl text-red-500 outline-none">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block">Ko bắt máy</label>
-                            <input type="number" id="no_answer" placeholder="0" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-black text-xl outline-none opacity-60">
-                        </div>
-                        <div>
-                            <label class="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block">Sai số</label>
-                            <input type="number" id="wrong_number" placeholder="0" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-black text-xl outline-none opacity-60">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="text-[8px] font-black uppercase text-amber-500 ml-2 mb-1 block">Follow-ups (Chăm sóc lại)</label>
-                        <input type="number" id="follow_ups" placeholder="0" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-black text-xl text-amber-600 outline-none">
-                    </div>
-
-                    <div>
-                        <label class="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block italic">Ghi chú (Remarks)</label>
-                        <textarea id="remarks" rows="2" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-medium text-xs outline-none" placeholder="Nhập lưu ý..."></textarea>
-                    </div>
-
-                    <button onclick="submitReport()" id="btn-submit" class="w-full bg-slate-900 text-white p-5 rounded-[22px] font-black uppercase italic shadow-2xl active:scale-95 transition-all">Lưu dữ liệu</button>
+                    <button onclick="submitAll()" id="btn-submit" class="w-full bg-slate-900 text-white p-5 rounded-[25px] font-black uppercase italic shadow-2xl active:scale-95 transition-all">Lưu toàn bộ dữ liệu</button>
                 </div>
             </div>
         </div>
@@ -93,21 +78,24 @@
         let calendar;
         let userEmail = "";
 
-        const ALL_FIELDS = ['total_calls', 'successful_calls', 'warm_leads', 'hot_leads', 'no_answer', 'wrong_number', 'follow_ups', 'remarks'];
+        const CALL_FIELDS = ['total_calls', 'successful_calls', 'warm_leads', 'hot_leads', 'no_answer', 'wrong_number', 'follow_ups', 'remarks'];
 
         function autoCalc() {
-            const total = parseInt(document.getElementById('total_calls').value) || 0;
-            const success = parseInt(document.getElementById('successful_calls').value) || 0;
-            const ratio = total > 0 ? ((success / total) * 100).toFixed(0) : 0;
-            document.getElementById('calc-ratio').innerText = `Ratio: ${ratio}%`;
-            document.getElementById('successful_calls').style.color = (success > total) ? '#ef4444' : '#16a34a';
+            const t = parseInt(document.getElementById('total_calls').value) || 0;
+            const s = parseInt(document.getElementById('successful_calls').value) || 0;
+            const r = t > 0 ? ((s / t) * 100).toFixed(0) : 0;
+            document.getElementById('calc-ratio').innerText = `Ratio: ${r}%`;
         }
 
         async function initPage() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) { location.href = 'login.html'; return; }
             userEmail = session.user.email;
-            document.getElementById('user-display').innerText = userEmail;
+
+            const { data: locs } = await supabaseClient.from('locations').select('*').eq('is_active', true);
+            const select = document.getElementById('location_id');
+            locs.forEach(l => select.add(new Option(l.name, l.id)));
+
             initCalendar();
         }
 
@@ -117,8 +105,8 @@
                 headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
                 dateClick: (info) => {
                     document.getElementById('report_date').value = info.dateStr;
-                    document.getElementById('date-label').innerText = info.date.toLocaleDateString('vi-VN');
-                    loadData(info.dateStr);
+                    document.getElementById('display-date').innerText = info.date.toLocaleDateString('vi-VN');
+                    loadFullData(info.dateStr);
                 },
                 events: async (info, successCallback) => {
                     const { data } = await supabaseClient.from('daily_reports').select('report_date, successful_calls').eq('employee_email', userEmail);
@@ -128,46 +116,65 @@
             calendar.render();
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('report_date').value = today;
-            document.getElementById('date-label').innerText = new Date().toLocaleDateString('vi-VN');
-            loadData(today);
+            document.getElementById('display-date').innerText = new Date().toLocaleDateString('vi-VN');
+            loadFullData(today);
         }
 
-        async function loadData(dateStr) {
-            const { data } = await supabaseClient.from('daily_reports').select('*').eq('employee_email', userEmail).eq('report_date', dateStr).maybeSingle();
-            if (data) {
-                ALL_FIELDS.forEach(f => document.getElementById(f).value = data[f] || (f === 'remarks' ? '' : 0));
+        async function loadFullData(dateStr) {
+            // 1. Load Call data
+            const { data: report } = await supabaseClient.from('daily_reports').select('*').eq('employee_email', userEmail).eq('report_date', dateStr).maybeSingle();
+            
+            if (report) {
+                CALL_FIELDS.forEach(f => document.getElementById(f).value = report[f] || (f === 'remarks' ? '' : 0));
+                
+                // 2. Load Detail data (Hẹn khách)
+                const { data: detail } = await supabaseClient.from('report_details').select('*').eq('report_id', report.id).maybeSingle();
+                if (detail) {
+                    document.getElementById('location_id').value = detail.location_id;
+                    document.getElementById('booked_count').value = detail.booked_count;
+                    document.getElementById('attended_count').value = detail.attended_count;
+                } else {
+                    document.getElementById('booked_count').value = '';
+                    document.getElementById('attended_count').value = '';
+                }
                 document.getElementById('btn-submit').innerText = "Cập nhật dữ liệu";
             } else {
-                ALL_FIELDS.forEach(f => document.getElementById(f).value = '');
+                CALL_FIELDS.forEach(f => document.getElementById(f).value = '');
+                document.getElementById('booked_count').value = '';
+                document.getElementById('attended_count').value = '';
                 document.getElementById('btn-submit').innerText = "Lưu báo cáo mới";
             }
             autoCalc();
         }
 
-        async function submitReport() {
-            const btn = document.getElementById('btn-submit');
-            const payload = { 
-                employee_email: userEmail,
-                report_date: document.getElementById('report_date').value 
-            };
-            ALL_FIELDS.forEach(f => {
+        async function submitAll() {
+            const date = document.getElementById('report_date').value;
+            
+            // BƯỚC 1: Lưu vào daily_reports
+            const reportPayload = { employee_email: userEmail, report_date: date };
+            CALL_FIELDS.forEach(f => {
                 const val = document.getElementById(f).value;
-                payload[f] = f === 'remarks' ? val : (parseInt(val) || 0);
+                reportPayload[f] = f === 'remarks' ? val : (parseInt(val) || 0);
             });
 
-            if (payload.successful_calls > payload.total_calls) return alert("Thành công không thể lớn hơn Tổng Call!");
+            const { data: reportData, error: err1 } = await supabaseClient.from('daily_reports').upsert([reportPayload], { onConflict: 'report_date, employee_email' }).select().single();
 
-            btn.disabled = true;
-            const { error } = await supabaseClient.from('daily_reports').upsert([payload], { onConflict: 'report_date, employee_email' });
-            if (!error) { 
-                alert("Đã lưu!"); 
-                calendar.refetchEvents();
-                btn.disabled = false;
-            } else {
-                alert("Lỗi: " + error.message);
-                btn.disabled = false;
-            }
+            if (err1) { alert("Lỗi lưu Call: " + err1.message); return; }
+
+            // BƯỚC 2: Lưu vào report_details
+            const detailPayload = {
+                report_id: reportData.id,
+                location_id: document.getElementById('location_id').value,
+                booked_count: parseInt(document.getElementById('booked_count').value) || 0,
+                attended_count: parseInt(document.getElementById('attended_count').value) || 0
+            };
+
+            const { error: err2 } = await supabaseClient.from('report_details').upsert([detailPayload], { onConflict: 'report_id' });
+
+            if (!err2) { alert("Thành công!"); calendar.refetchEvents(); }
+            else alert("Lỗi lưu Chi nhánh: " + err2.message);
         }
+
         window.onload = initPage;
     </script>
 </body>
