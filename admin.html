@@ -2,81 +2,144 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Quản Trị Phân Quyền</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Trị - Call Tracking</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 p-4 sm:p-10">
-    <div class="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
-        <div class="flex justify-between items-center mb-8 border-b pb-4">
-            <h2 class="text-2xl font-black text-slate-800 uppercase italic tracking-tighter">Phê Duyệt Thành Viên</h2>
-            <div class="flex gap-2">
-                <button onclick="approveAll()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-blue-700">Duyệt Tất Cả</button>
-                <a href="index.html" class="bg-gray-200 px-4 py-2 rounded-lg text-xs font-bold uppercase">Quay lại</a>
+<body class="bg-slate-50 p-4 sm:p-10 font-sans text-slate-900">
+    <div id="admin-container" class="hidden max-w-4xl mx-auto">
+        
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800 uppercase italic tracking-tighter">Quản Trị Nhân Viên</h2>
+                <p class="text-xs text-slate-500 font-medium">Phê duyệt và phân quyền truy cập hệ thống</p>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button onclick="loadUsers()" class="flex-1 sm:flex-none bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 transition-all">Làm mới</button>
+                <a href="index.html" class="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase text-center shadow-lg shadow-blue-200">Về trang chủ</a>
             </div>
         </div>
 
-        <div id="user-list" class="space-y-3">
-            <p class="text-center text-slate-400 italic">Đang tải danh sách...</p>
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900 text-white text-[10px] uppercase tracking-widest">
+                            <th class="p-4 italic">Nhân viên</th>
+                            <th class="p-4">Trạng thái hiện tại</th>
+                            <th class="p-4 text-right">Hành động phê duyệt</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-list-body" class="divide-y divide-slate-100 text-sm">
+                        </tbody>
+                </table>
+            </div>
         </div>
+    </div>
+
+    <div id="loading-screen" class="flex items-center justify-center min-h-screen">
+        <p class="text-slate-400 font-bold animate-pulse">Đang kiểm tra quyền quản trị...</p>
     </div>
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-        async function loadUsers() {
-            const { data } = await supabaseClient.from('user_permissions').select('*').order('role', { ascending: false });
-            const list = document.getElementById('user-list');
+        // 1. KIỂM TRA QUYỀN ADMIN KHI VÀO TRANG
+        async function checkAdminAuth() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
             
-            if (data.length === 0) {
-                list.innerHTML = `<p class="text-center py-10 text-slate-400">Chưa có ai đăng nhập hệ thống.</p>`;
+            if (!user) {
+                window.location.href = 'index.html';
                 return;
             }
 
-            list.innerHTML = data.map(u => `
-                <div class="flex justify-between items-center p-4 border-2 ${u.role === 'pending' ? 'border-amber-100 bg-amber-50' : 'border-slate-50 bg-white'} rounded-xl transition-all">
-                    <div>
-                        <p class="font-black text-slate-700">${u.email}</p>
-                        <div class="flex items-center gap-2 mt-1">
-                             <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${u.role === 'pending' ? 'bg-amber-200 text-amber-700' : 'bg-emerald-100 text-emerald-700'}">
-                                ${u.role}
-                             </span>
-                             <span class="text-[10px] text-slate-400 italic">${u.full_name || ''}</span>
+            const { data: perm, error } = await supabaseClient.from('user_permissions')
+                .select('role')
+                .eq('email', user.email)
+                .maybeSingle();
+
+            if (!perm || perm.role !== 'admin') {
+                alert("TRUY CẬP BỊ TỪ CHỐI: Bạn không có quyền Admin.");
+                window.location.href = 'index.html';
+            } else {
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('admin-container').classList.remove('hidden');
+                loadUsers();
+            }
+        }
+
+        // 2. TẢI DANH SÁCH TẤT CẢ USER
+        async function loadUsers() {
+            const { data, error } = await supabaseClient.from('user_permissions')
+                .select('*')
+                .order('role', { ascending: true }); // Hiện pending lên đầu
+
+            if (error) {
+                alert("Lỗi tải dữ liệu!");
+                return;
+            }
+
+            const body = document.getElementById('user-list-body');
+            body.innerHTML = data.map(u => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4">
+                        <div class="font-black text-slate-700">${u.email}</div>
+                        <div class="text-[10px] text-slate-400 font-medium">${u.full_name || 'Chưa cập nhật'}</div>
+                    </td>
+                    <td class="p-4">
+                        <span class="inline-block px-2 py-1 rounded-md text-[10px] font-black uppercase ${getRoleClass(u.role)}">
+                            ${u.role}
+                        </span>
+                    </td>
+                    <td class="p-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            ${u.role === 'pending' ? `
+                                <button onclick="updateRole('${u.email}', 'staff')" class="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-600 shadow-sm">Duyệt Staff</button>
+                            ` : ''}
+                            
+                            ${u.role !== 'admin' ? `
+                                <button onclick="updateRole('${u.email}', 'admin')" class="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 shadow-sm">Lên Admin</button>
+                                <button onclick="deleteUser('${u.email}')" class="bg-white border border-red-200 text-red-500 text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-red-50">Xóa</button>
+                            ` : `<span class="text-[10px] font-bold text-slate-300 italic px-3 py-1.5 italic">Chủ sở hữu</span>`}
                         </div>
-                    </div>
-                    <div>
-                        ${u.role === 'pending' ? 
-                            `<button onclick="approve('${u.email}')" class="bg-white border-2 border-blue-600 text-blue-600 px-4 py-2 rounded-lg text-xs font-black hover:bg-blue-600 hover:text-white transition-all shadow-sm">APPROVE</button>` : 
-                            `<button onclick="resetRole('${u.email}')" class="text-slate-300 hover:text-red-500 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor font-bold">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>`
-                        }
-                    </div>
-                </div>
+                    </td>
+                </tr>
             `).join('');
         }
 
-        async function approve(email) {
-            const { error } = await supabaseClient.from('user_permissions').update({ role: 'staff' }).eq('email', email);
-            if (!error) loadUsers();
+        function getRoleClass(role) {
+            if (role === 'admin') return 'bg-indigo-100 text-indigo-700';
+            if (role === 'staff') return 'bg-emerald-100 text-emerald-700';
+            return 'bg-amber-100 text-amber-700';
         }
 
-        async function approveAll() {
-            if (!confirm("Duyệt tất cả tài khoản đang chờ?")) return;
-            const { error } = await supabaseClient.from('user_permissions').update({ role: 'staff' }).eq('role', 'pending');
-            if (!error) loadUsers();
+        // 3. CẬP NHẬT QUYỀN (APPROVE)
+        async function updateRole(email, newRole) {
+            if (!confirm(`Xác nhận chuyển ${email} thành ${newRole.toUpperCase()}?`)) return;
+
+            const { error } = await supabaseClient.from('user_permissions')
+                .update({ role: newRole })
+                .eq('email', email);
+
+            if (error) alert("Lỗi: " + error.message);
+            else loadUsers();
         }
 
-        async function resetRole(email) {
-            if (!confirm("Chuyển " + email + " về danh sách chờ?")) return;
-            await supabaseClient.from('user_permissions').update({ role: 'pending' }).eq('email', email);
-            loadUsers();
+        // 4. XÓA USER KHỎI DANH SÁCH
+        async function deleteUser(email) {
+            if (!confirm(`Bạn có chắc muốn xóa quyền của ${email}?`)) return;
+
+            const { error } = await supabaseClient.from('user_permissions')
+                .delete()
+                .eq('email', email);
+
+            if (error) alert("Lỗi: " + error.message);
+            else loadUsers();
         }
 
-        loadUsers();
+        window.onload = checkAdminAuth;
     </script>
 </body>
 </html>
