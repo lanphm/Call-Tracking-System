@@ -112,15 +112,34 @@
             calendar.render();
         }
 
-        async function refreshCalendar() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const { data: reports } = await supabaseClient.from('daily_reports').select('report_date, total_calls, successful_calls').eq('employee_email', user.email);
-            const events = reports.map(r => ({
-                title: `📞${r.total_calls} | ✅${r.successful_calls}`,
-                start: r.report_date, allDay: true, textColor: '#1e40af'
-            }));
-            calendar.removeAllEvents(); calendar.addEventSource(events);
-        }
+async function refreshCalendar() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    // Lấy kèm chi tiết để check có khách đến hay không
+    const { data: reports } = await supabaseClient.from('daily_reports')
+                                    .select('report_date, total_calls, successful_calls, report_details(attended_count)')
+                                    .eq('employee_email', user.email);
+    
+    const events = reports.map(r => {
+        // Tính tổng khách đến trong ngày
+        const totalAttended = r.report_details.reduce((sum, det) => sum + det.attended_count, 0);
+        
+        return {
+            title: `📞${r.total_calls} | ✅${r.successful_calls}`,
+            start: r.report_date,
+            allDay: true,
+            // LOGIC MÀU SẮC:
+            // Nếu có khách đến thực tế (Attended > 0) -> Màu Xanh lá (Hoàn tất)
+            // Nếu mới chỉ nhập cuộc gọi (Attended = 0) -> Màu Vàng (Đang theo dõi)
+            backgroundColor: totalAttended > 0 ? '#dcfce7' : '#fef9c3', 
+            borderColor: totalAttended > 0 ? '#22c55e' : '#facc15',
+            textColor: totalAttended > 0 ? '#166534' : '#854d0e',
+            display: 'block'
+        };
+    });
+    
+    calendar.removeAllEvents();
+    calendar.addEventSource(events);
+}
 
         async function openForm(dateStr) {
             document.getElementById('report_date').value = dateStr;
@@ -217,3 +236,4 @@
     </script>
 </body>
 </html>
+
