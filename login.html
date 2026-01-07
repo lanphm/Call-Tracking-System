@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Strategic Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./config.js"></script>
+</head>
+<body class="bg-slate-900 flex items-center justify-center min-h-screen p-4">
+    <div class="max-w-md w-full bg-white p-10 rounded-[50px] shadow-2xl text-center">
+        <h1 class="text-3xl font-black italic uppercase tracking-tighter text-slate-900">Strategic Hub</h1>
+        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2 mb-8">Hệ thống quản trị nội bộ</p>
+        
+        <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-slate-900 text-white p-4 rounded-2xl font-black uppercase italic hover:bg-slate-800 transition-all">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
+            Đăng nhập với Google
+        </button>
+        
+        <p class="text-[9px] text-slate-400 mt-6 italic">Lưu ý: Chỉ tài khoản được cấp quyền mới có thể truy cập dữ liệu.</p>
+    </div>
+
+    <script>
+        const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+        async function loginWithGoogle() {
+            const { error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin + '/index.html' }
+            });
+            if (error) alert("Lỗi đăng nhập: " + error.message);
+        }
+    </script>
+</body>
+</html>
