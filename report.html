@@ -16,21 +16,21 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-2xl font-black uppercase italic tracking-tighter">Performance Report</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] italic">Hệ thống phân tích dữ liệu</p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] italic">Dữ liệu phân tích nhân sự</p>
                 </div>
                 <a href="index.html" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-xs font-bold uppercase italic transition-all">Quay lại</a>
             </div>
             
             <div class="flex gap-2">
-                <button onclick="renderReport('week')" id="tab-week" class="tab-btn px-6 py-2 rounded-lg text-xs font-black uppercase transition-all bg-blue-600">Theo Tuần</button>
-                <button onclick="renderReport('month')" id="tab-month" class="tab-btn px-6 py-2 rounded-lg text-xs font-black uppercase transition-all bg-white/10">Theo Tháng</button>
-                <button onclick="renderReport('year')" id="tab-year" class="tab-btn px-6 py-2 rounded-lg text-xs font-black uppercase transition-all bg-white/10">Theo Năm</button>
+                <button onclick="changeTab('week')" id="tab-week" class="tab-btn px-6 py-2 rounded-lg text-xs font-black uppercase transition-all bg-blue-600">Theo Tuần</button>
+                <button onclick="changeTab('month')" id="tab-month" class="tab-btn px-6 py-2 rounded-lg text-xs font-black uppercase transition-all bg-white/10">Theo Tháng</button>
+                <button onclick="changeTab('year')" id="tab-year" class="tab-btn px-6 py-2 rounded-lg text-xs font-black uppercase transition-all bg-white/10">Theo Năm</button>
             </div>
         </div>
 
         <div class="p-6 space-y-6">
-            <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200 shadow-sm">
-                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest italic text-center">Biểu đồ xu hướng hiệu suất</h3>
+            <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                <h3 id="chart-title" class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest italic text-center text-blue-600">Xu hướng hiệu suất</h3>
                 <canvas id="performanceChart" height="80"></canvas>
             </div>
 
@@ -38,7 +38,7 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-100 text-[10px] uppercase font-black tracking-widest text-slate-600 border-b-2 border-slate-200">
-                            <th class="p-4 border-r border-slate-200">ID (Nhân viên)</th>
+                            <th class="p-4 border-r border-slate-200">ID (Họ Tên)</th>
                             <th id="col-time" class="p-4 border-r border-slate-200">Thời gian</th>
                             <th class="p-4 text-center border-r border-slate-200 italic">SUM of ShowUp</th>
                             <th class="p-4 text-center border-r border-slate-200 italic">SUM of ApptTotal</th>
@@ -47,10 +47,8 @@
                             <th class="p-4 text-center text-emerald-700 italic">Conversion Rate</th>
                         </tr>
                     </thead>
-                    <tbody id="report-body" class="text-sm">
-                        </tbody>
-                    <tfoot id="report-footer" class="bg-slate-50 font-black border-t-2 border-slate-300 text-slate-900">
-                    </tfoot>
+                    <tbody id="report-body" class="text-sm"></tbody>
+                    <tfoot id="report-footer" class="bg-slate-800 text-white font-black border-t-2"></tfoot>
                 </table>
             </div>
         </div>
@@ -58,158 +56,111 @@
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-        let rawData = [], chartInstance = null;
+        let rawData = [], usersMap = {}, chartInstance = null, currentType = 'week';
 
-        // --- HELPER FUNCTIONS (PHẢI CÓ ĐỂ REPORT CHẠY) ---
         const fmtPct = (num, den) => den > 0 ? ((num / den) * 100).toFixed(2) + '%' : '0.00%';
-        
+
+        // Helper thời gian
         function getWeekNumber(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(), 0, 1))) / 86400000) + 1) / 7);
         }
 
         function getWeekRange(weekNo, year) {
-            const firstDayOfYear = new Date(year, 0, 1);
-            const days = (weekNo - 1) * 7;
-            const res = new Date(year, 0, 1 + days);
-            const dayOfWeek = res.getDay();
-            const diff = res.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-            const monday = new Date(res.setDate(diff));
-            const sunday = new Date(res.setDate(monday.getDate() + 6));
-            const f = (d) => d.toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'});
-            return `${f(monday)} - ${f(sunday)}`;
+            const firstDay = new Date(year, 0, 1);
+            const monday = new Date(year, 0, 1 + (weekNo - 1) * 7 - (firstDay.getDay() || 7) + 1);
+            const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+            return `${monday.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'})}-${sunday.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'})}`;
         }
 
-        async function fetchData() {
-            const { data, error } = await supabaseClient.from('daily_reports').select('*, report_details(*)');
-            if (error) return console.error(error);
-            rawData = data || [];
+        async function init() {
+            // Lấy danh sách tên nhân viên
+            const { data: users } = await supabaseClient.from('user_permissions').select('email, full_name');
+            users.forEach(u => usersMap[u.email] = u.full_name || u.email);
+
+            const { data: reports } = await supabaseClient.from('daily_reports').select('*, report_details(*)');
+            rawData = reports || [];
             renderReport('week');
         }
 
-        function renderReport(type) {
-            // Cập nhật giao diện Tab
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.className = 'tab-btn px-6 py-2 rounded-lg text-xs font-black uppercase transition-all bg-white/10 text-slate-400');
-            document.getElementById(`tab-${type}`).className = 'tab-btn px-6 py-2 rounded-lg text-xs font-black uppercase transition-all bg-blue-600 text-white';
-            document.getElementById('col-time').innerText = type === 'week' ? 'Tuần' : (type === 'month' ? 'Tháng' : 'Năm');
-
-            const grouped = {};
-            let grandS = 0, grandA = 0, grandC = 0, grandSucc = 0;
-            
-            // Đối tượng cho biểu đồ
-            const chartDataObj = {}; 
-
-            rawData.forEach(r => {
-                const email = r.employee_email;
-                const date = new Date(r.report_date);
-                const yr = date.getFullYear();
-                let timeKey = "", timeLabel = "";
-
-                if (type === 'week') {
-                    const wk = getWeekNumber(date);
-                    timeKey = `${yr}-W${wk.toString().padStart(2,'0')}`;
-                    timeLabel = `Tuần ${wk} (${getWeekRange(wk, yr)})`;
-                } else if (type === 'month') {
-                    const mo = (date.getMonth() + 1).toString().padStart(2, '0');
-                    timeKey = `${yr}-${mo}`;
-                    timeLabel = `${yr}-${mo}`;
-                } else {
-                    timeKey = `${yr}`;
-                    timeLabel = `${yr}`;
-                }
-
-                if (!grouped[email]) grouped[email] = { total: {s:0, a:0, c:0, succ:0}, times: {} };
-                if (!grouped[email].times[timeKey]) grouped[email].times[timeKey] = { label: timeLabel, s:0, a:0, c:0, succ:0 };
-                if (!chartDataObj[timeKey]) chartDataObj[timeKey] = { label: timeLabel, s:0, a:0, c:0, succ:0 };
-
-                let dayS = 0, dayA = 0;
-                r.report_details.forEach(d => { dayS += d.attended_count; dayA += d.booked_count; });
-
-                const update = (obj) => {
-                    obj.s += dayS; obj.a += dayA;
-                    obj.c += r.total_calls; obj.succ += r.successful_calls;
-                };
-
-                update(grouped[email].times[timeKey]);
-                update(grouped[email].total);
-                update(chartDataObj[timeKey]);
-                
-                grandS += dayS; grandA += dayA; grandC += r.total_calls; grandSucc += r.successful_calls;
-            });
-
-            // Vẽ bảng
-            const tbody = document.getElementById('report-body');
-            tbody.innerHTML = '';
-            Object.keys(grouped).sort().forEach(email => {
-                const user = grouped[email];
-                const timeKeys = Object.keys(user.times).sort();
-                timeKeys.forEach((tk, idx) => {
-                    const d = user.times[tk];
-                    tbody.innerHTML += `
-                        <tr class="border-b border-slate-100 hover:bg-slate-50">
-                            <td class="p-4 font-bold text-slate-700">${idx === 0 ? email : ''}</td>
-                            <td class="p-4 text-slate-500 font-medium">${d.label}</td>
-                            <td class="p-4 text-center font-mono">${d.s}</td>
-                            <td class="p-4 text-center font-mono">${d.a}</td>
-                            <td class="p-4 text-center font-mono">${d.c}</td>
-                            <td class="p-4 text-center font-bold text-blue-600">${fmtPct(d.s, d.a)}</td>
-                            <td class="p-4 text-center font-bold text-emerald-600">${fmtPct(d.succ, d.c)}</td>
-                        </tr>`;
-                });
-                tbody.innerHTML += `
-                    <tr class="bg-blue-50/50 font-black border-b-2 border-slate-200">
-                        <td class="p-4 text-blue-800 text-[10px] uppercase italic">${email} TOTAL</td>
-                        <td></td>
-                        <td class="p-4 text-center">${user.total.s}</td>
-                        <td class="p-4 text-center">${user.total.a}</td>
-                        <td class="p-4 text-center">${user.total.c}</td>
-                        <td class="p-4 text-center text-blue-700">${fmtPct(user.total.s, user.total.a)}</td>
-                        <td class="p-4 text-center text-emerald-700">${fmtPct(user.total.succ, user.total.c)}</td>
-                    </tr>`;
-            });
-
-            document.getElementById('report-footer').innerHTML = `
-                <tr>
-                    <td class="p-5 uppercase italic" colspan="2">Grand Total</td>
-                    <td class="p-5 text-center">${grandS}</td>
-                    <td class="p-5 text-center">${grandA}</td>
-                    <td class="p-5 text-center">${grandC}</td>
-                    <td class="p-5 text-center text-blue-700 text-base">${fmtPct(grandS, grandA)}</td>
-                    <td class="p-5 text-center text-emerald-700 text-base">${fmtPct(grandSucc, grandC)}</td>
-                </tr>`;
-
-            // Cập nhật biểu đồ
-            const sortedTimes = Object.keys(chartDataObj).sort();
-            updateChart(
-                sortedTimes.map(t => chartDataObj[t].label),
-                sortedTimes.map(t => (chartDataObj[t].s / chartDataObj[t].a * 100).toFixed(1)),
-                sortedTimes.map(t => (chartDataObj[t].succ / chartDataObj[t].c * 100).toFixed(1))
-            );
+        function changeTab(type) {
+            currentType = type;
+            renderReport(type);
         }
 
-        function updateChart(labels, sur, cr) {
+        function renderReport(type) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.replace('bg-blue-600', 'bg-white/10'));
+            document.getElementById(`tab-${type}`).classList.replace('bg-white/10', 'bg-blue-600');
+            document.getElementById('col-time').innerText = type === 'week' ? 'Tuần' : (type === 'month' ? 'Tháng' : 'Năm');
+
+            const grouped = {}, chartObj = {};
+            let gS=0, gA=0, gC=0, gSucc=0;
+
+            rawData.forEach(r => {
+                const name = usersMap[r.employee_email] || r.employee_email;
+                const d = new Date(r.report_date);
+                const yr = d.getFullYear();
+                let key = "", label = "";
+
+                if (type === 'week') {
+                    const wk = getWeekNumber(d); key = `${yr}-W${wk}`; label = `Tuần ${wk} (${getWeekRange(wk, yr)})`;
+                } else if (type === 'month') {
+                    const mo = d.getMonth()+1; key = `${yr}-${mo}`; label = `Tháng ${mo}/${yr}`;
+                } else {
+                    key = `${yr}`; label = `Năm ${yr}`;
+                }
+
+                if (!grouped[name]) grouped[name] = { total: {s:0, a:0, c:0, succ:0}, times: {} };
+                if (!grouped[name].times[key]) grouped[name].times[key] = { label, s:0, a:0, c:0, succ:0 };
+                if (!chartObj[key]) chartObj[key] = { label, s:0, a:0, c:0, succ:0 };
+
+                let dayS = 0, dayA = 0;
+                r.report_details.forEach(det => { dayS += det.attended_count; dayA += det.booked_count; });
+
+                const update = (obj) => { obj.s+=dayS; obj.a+=dayA; obj.c+=r.total_calls; obj.succ+=r.successful_calls; };
+                update(grouped[name].times[key]); update(grouped[name].total); update(chartObj[key]);
+                gS+=dayS; gA+=dayA; gC+=r.total_calls; gSucc+=r.successful_calls;
+            });
+
+            const tbody = document.getElementById('report-body');
+            tbody.innerHTML = '';
+            Object.keys(grouped).sort().forEach(name => {
+                const u = grouped[name];
+                Object.keys(u.times).sort().forEach((tk, idx) => {
+                    const t = u.times[tk];
+                    tbody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="p-4 font-bold text-slate-700">${idx===0?name:''}</td>
+                        <td class="p-4 text-slate-500">${t.label}</td>
+                        <td class="p-4 text-center font-mono">${t.s}</td><td class="p-4 text-center font-mono">${t.a}</td><td class="p-4 text-center font-mono">${t.c}</td>
+                        <td class="p-4 text-center font-bold text-blue-600">${fmtPct(t.s, t.a)}</td><td class="p-4 text-center font-bold text-emerald-600">${fmtPct(t.succ, t.c)}</td>
+                    </tr>`;
+                });
+                tbody.innerHTML += `<tr class="bg-slate-100 font-black"><td class="p-4 text-[10px] uppercase italic">${name} TOTAL</td><td></td><td class="p-4 text-center">${u.total.s}</td><td class="p-4 text-center">${u.total.a}</td><td class="p-4 text-center">${u.total.c}</td><td class="p-4 text-center text-blue-700">${fmtPct(u.total.s, u.total.a)}</td><td class="p-4 text-center text-emerald-700">${fmtPct(u.total.succ, u.total.c)}</td></tr>`;
+            });
+
+            document.getElementById('report-footer').innerHTML = `<tr><td class="p-5 uppercase italic" colspan="2">Grand Total</td><td class="p-5 text-center">${gS}</td><td class="p-5 text-center">${gA}</td><td class="p-5 text-center">${gC}</td><td class="p-5 text-center text-blue-400 text-lg">${fmtPct(gS, gA)}</td><td class="p-5 text-center text-emerald-400 text-lg">${fmtPct(gSucc, gC)}</td></tr>`;
+
+            const sk = Object.keys(chartObj).sort();
+            updateChart(sk.map(k=>chartObj[k].label), sk.map(k=>(chartObj[k].s/chartObj[k].a*100)||0), sk.map(k=>(chartObj[k].succ/chartObj[k].c*100)||0), type);
+        }
+
+        function updateChart(labels, sur, cr, type) {
             if (chartInstance) chartInstance.destroy();
             const ctx = document.getElementById('performanceChart').getContext('2d');
             chartInstance = new Chart(ctx, {
-                type: 'line',
+                type: type === 'week' ? 'line' : 'bar',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Show-Up Rate %', data: sur, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4 },
-                        { label: 'Conversion Rate %', data: cr, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4 }
+                        { label: 'Show-Up Rate %', data: sur, borderColor: '#3b82f6', backgroundColor: '#3b82f6aa', tension: 0.4, borderRadius: 4 },
+                        { label: 'Conversion Rate %', data: cr, borderColor: '#10b981', backgroundColor: '#10b981aa', tension: 0.4, borderRadius: 4 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'top', labels: { font: { weight: 'bold', size: 10 } } } },
-                    scales: { y: { beginAtZero: true, max: 100 } }
-                }
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, max: 100 } } }
             });
         }
-
-        window.onload = fetchData;
+        window.onload = init;
     </script>
 </body>
 </html>
