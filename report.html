@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Tuần Chi Tiết</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-2 sm:p-8 font-sans">
+    <div class="max-w-5xl mx-auto bg-white p-6 rounded-3xl shadow-xl border border-slate-200">
+        
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <div>
+                <h1 class="text-xl font-black text-slate-800 uppercase italic tracking-tighter">Hiệu Suất Theo Tuần</h1>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Show Up Rate & Conversion Rate</p>
+            </div>
+            <a href="index.html" class="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-200">Quay lại</a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-slate-900 text-white uppercase text-[10px] tracking-widest">
+                        <th class="p-3 border border-slate-700">ID</th>
+                        <th class="p-3 border border-slate-700">Tuần</th>
+                        <th class="p-3 border border-slate-700 text-center">Show Up Rate</th>
+                        <th class="p-3 border border-slate-700 text-center">Conversion Rate</th>
+                    </tr>
+                </thead>
+                <tbody id="report-body">
+                    <tr><td colspan="4" class="p-10 text-center text-slate-400 italic">Đang tải dữ liệu...</td></tr>
+                </tbody>
+                <tfoot id="report-footer"></tfoot>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+        // Hàm tính dải ngày Thứ 2 - Chủ Nhật từ số tuần và năm
+        function getWeekRange(weekNo, year) {
+            const firstDayOfYear = new Date(year, 0, 1);
+            const days = (weekNo - 1) * 7;
+            const res = new Date(year, 0, 1 + days);
+            
+            // Điều chỉnh về Thứ 2
+            const dayOfWeek = res.getDay();
+            const diff = res.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+            const monday = new Date(res.setDate(diff));
+            const sunday = new Date(res.setDate(monday.getDate() + 6));
+
+            const fmt = (d) => d.toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            return `${fmt(monday)} - ${fmt(sunday)}`;
+        }
+
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        async function fetchAndRenderReport() {
+            const { data: reports, error } = await supabaseClient.from('daily_reports').select('*, report_details(*)');
+            if (error) return;
+
+            const grouped = {};
+            let gB=0, gA=0, gS=0, gC=0;
+
+            reports.forEach(r => {
+                const email = r.employee_email;
+                const date = new Date(r.report_date);
+                const wk = getWeekNumber(date);
+                const yr = date.getFullYear();
+                const key = `${yr}_${wk}`;
+
+                if (!grouped[email]) grouped[email] = { weeks: {}, total: {b:0, a:0, s:0, c:0} };
+                if (!grouped[email].weeks[key]) grouped[email].weeks[key] = { label: `Tuần ${wk}`, range: getWeekRange(wk, yr), b:0, a:0, s:0, c:0 };
+
+                let dB=0, dA=0;
+                r.report_details.forEach(d => { dB += d.booked_count; dA += d.attended_count; });
+
+                grouped[email].weeks[key].b += dB; grouped[email].weeks[key].a += dA;
+                grouped[email].weeks[key].s += r.successful_calls; grouped[email].weeks[key].c += r.total_calls;
+
+                grouped[email].total.b += dB; grouped[email].total.a += dA;
+                grouped[email].total.s += r.successful_calls; grouped[email].total.c += r.total_calls;
+
+                gB += dB; gA += dA; gS += r.successful_calls; gC += r.total_calls;
+            });
+
+            const tbody = document.getElementById('report-body');
+            tbody.innerHTML = '';
+
+            Object.keys(grouped).forEach(email => {
+                const user = grouped[email];
+                const sortedWeeks = Object.keys(user.weeks).sort();
+
+                sortedWeeks.forEach((wk, i) => {
+                    const d = user.weeks[wk];
+                    const su = d.b > 0 ? ((d.a/d.b)*100).toFixed(2) : "0.00";
+                    const cr = d.c > 0 ? ((d.s/d.c)*100).toFixed(2) : "0.00";
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100">
+                            <td class="p-3 font-bold text-slate-700">${i === 0 ? email : ''}</td>
+                            <td class="p-3 text-slate-500">${d.label} (${d.range})</td>
+                            <td class="p-3 text-center font-mono">${su}%</td>
+                            <td class="p-3 text-center font-mono">${cr}%</td>
+                        </tr>`;
+                });
+
+                const tSu = user.total.b > 0 ? ((user.total.a/user.total.b)*100).toFixed(2) : "0.00";
+                const tCr = user.total.c > 0 ? ((user.total.s/user.total.c)*100).toFixed(2) : "0.00";
+                tbody.innerHTML += `
+                    <tr class="bg-slate-50 font-bold border-b-2 border-slate-200 text-blue-700">
+                        <td class="p-3">${email} Total</td>
+                        <td class="p-3"></td>
+                        <td class="p-3 text-center">${tSu}%</td>
+                        <td class="p-3 text-center">${tCr}%</td>
+                    </tr>`;
+            });
+
+            const gSu = gB > 0 ? ((gA/gB)*100).toFixed(2) : "0.00";
+            const gCr = gC > 0 ? ((gS/gC)*100).toFixed(2) : "0.00";
+            document.getElementById('report-footer').innerHTML = `
+                <tr class="bg-slate-900 text-white font-black">
+                    <td class="p-4" colspan="2">GRAND TOTAL</td>
+                    <td class="p-4 text-center">${gSu}%</td>
+                    <td class="p-4 text-center">${gCr}%</td>
+                </tr>`;
+        }
+        window.onload = fetchAndRenderReport;
+    </script>
+</body>
+</html>
