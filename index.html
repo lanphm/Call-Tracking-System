@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Báo cáo</title>
+    <title>Hệ thống Báo cáo Linh hoạt</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="config.js"></script>
 </head>
 <body class="bg-gray-100 p-4">
     <div id="app" class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <h1 class="text-2xl font-bold mb-6 text-center text-blue-600">Báo Cáo Cuộc Gọi</h1>
+        <h1 class="text-2xl font-bold mb-4 text-center text-blue-600">Báo Cáo Cuộc Gọi</h1>
         
         <div id="login-section" class="text-center">
             <button onclick="signIn()" class="bg-white border border-gray-300 px-4 py-2 rounded shadow hover:bg-gray-50 flex items-center justify-center w-full">
@@ -19,9 +20,16 @@
 
         <div id="form-section" class="hidden space-y-4">
             <div class="flex justify-between items-center bg-blue-50 p-2 rounded">
-                <span id="user-email" class="text-sm font-medium italic"></span>
+                <span id="user-email" class="text-sm font-medium italic text-blue-800"></span>
                 <button onclick="signOut()" class="text-xs text-red-500 underline">Thoát</button>
             </div>
+
+            <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Ngày báo cáo:</label>
+                <input type="date" id="report_date" onchange="loadExistingData()" class="w-full border-2 border-yellow-300 p-2 rounded-md">
+                <p class="text-[10px] text-gray-500 mt-1">* Chọn ngày để cập nhật số liệu Khách đến (Attended).</p>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Tổng cuộc gọi</label>
@@ -32,22 +40,26 @@
                     <input type="number" id="successful_calls" class="w-full border p-2 rounded" value="0">
                 </div>
             </div>
+
             <div id="location-inputs" class="border-t pt-4"></div>
+
             <div>
                 <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
-                <textarea id="remarks" class="w-full border p-2 rounded" placeholder="Nhập ghi chú nếu có..."></textarea>
+                <textarea id="remarks" class="w-full border p-2 rounded" placeholder="Ghi chú thêm..."></textarea>
             </div>
-            <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">GỬI BÁO CÁO</button>
+
+            <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 shadow-md uppercase">Lưu dữ liệu</button>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = "https://ilxngmrnsghlgfqjxfni.supabase.co";
-        // COPY MÃ ANON KEY CỰC DÀI DÁN VÀO GIỮA HAI DẤU NGOẶC KÉP DƯỚI ĐÂY
-        const SUPABASE_ANON_KEY = "sb_publishable_-I0b_tYqzQF4Vk1i6nYGqA_pg0opuN_";
-
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Sử dụng CONFIG từ file config.js
+        const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        
         let locations = [];
+        let currentReportId = null;
+
+        document.getElementById('report_date').valueAsDate = new Date();
 
         async function checkUser() {
             const { data: { user } } = await supabaseClient.auth.getUser();
@@ -55,66 +67,101 @@
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('form-section').classList.remove('hidden');
                 document.getElementById('user-email').innerText = user.email;
-                loadLocations();
+                await loadLocations();
+                await loadExistingData();
             }
-        }
-
-        async function signIn() {
-            await supabaseClient.auth.signInWithOAuth({ 
-                provider: 'google',
-                options: { redirectTo: window.location.origin }
-            });
-        }
-
-        async function signOut() {
-            await supabaseClient.auth.signOut();
-            window.location.reload();
         }
 
         async function loadLocations() {
             const { data } = await supabaseClient.from('locations').select('*').eq('is_active', true);
-            if (!data) return;
-            locations = data;
+            locations = data || [];
+            renderLocationInputs();
+        }
+
+        function renderLocationInputs() {
             const container = document.getElementById('location-inputs');
             container.innerHTML = '<h3 class="font-bold mb-3 text-gray-800">Chi tiết cơ sở:</h3>';
-            data.forEach(loc => {
+            locations.forEach(loc => {
                 container.insertAdjacentHTML('beforeend', `
                     <div class="mb-4 p-3 bg-gray-50 rounded border">
                         <p class="font-bold text-blue-700 mb-2">${loc.name}</p>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="number" id="booked_${loc.id}" placeholder="Booked" class="border p-2 rounded text-sm w-full">
-                            <input type="number" id="attended_${loc.id}" placeholder="Attended" class="border p-2 rounded text-sm w-full">
+                            <div><label class="text-[10px] uppercase text-gray-400">Booked</label><input type="number" id="booked_${loc.id}" value="0" class="border p-2 rounded text-sm w-full"></div>
+                            <div><label class="text-[10px] uppercase text-gray-400">Attended</label><input type="number" id="attended_${loc.id}" value="0" class="border p-2 rounded text-sm w-full"></div>
                         </div>
                     </div>
                 `);
             });
         }
 
+        async function loadExistingData() {
+            const selectedDate = document.getElementById('report_date').value;
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            const { data: report } = await supabaseClient.from('daily_reports')
+                .select('*, report_details(*)')
+                .eq('employee_email', user.email)
+                .eq('report_date', selectedDate)
+                .maybeSingle();
+
+            if (report) {
+                currentReportId = report.id;
+                document.getElementById('total_calls').value = report.total_calls;
+                document.getElementById('successful_calls').value = report.successful_calls;
+                document.getElementById('remarks').value = report.remarks || "";
+                report.report_details.forEach(detail => {
+                    if(document.getElementById(`booked_${detail.location_id}`)) document.getElementById(`booked_${detail.location_id}`).value = detail.booked_count;
+                    if(document.getElementById(`attended_${detail.location_id}`)) document.getElementById(`attended_${detail.location_id}`).value = detail.attended_count;
+                });
+                document.getElementById('btn-submit').innerText = "CẬP NHẬT DỮ LIỆU NGÀY " + selectedDate;
+            } else {
+                currentReportId = null;
+                document.getElementById('total_calls').value = 0;
+                document.getElementById('successful_calls').value = 0;
+                document.getElementById('remarks').value = "";
+                renderLocationInputs();
+                document.getElementById('btn-submit').innerText = "LƯU BÁO CÁO MỚI";
+            }
+        }
+
         async function submitReport() {
             const btn = document.getElementById('btn-submit');
-            btn.disabled = true; btn.innerText = "ĐANG GỬI...";
+            btn.disabled = true; btn.innerText = "ĐANG LƯU...";
             const { data: { user } } = await supabaseClient.auth.getUser();
-            
-            const { data: report, error: rError } = await supabaseClient.from('daily_reports').insert([{
+            const selectedDate = document.getElementById('report_date').value;
+
+            const reportData = {
                 employee_email: user.email,
+                report_date: selectedDate,
                 total_calls: parseInt(document.getElementById('total_calls').value) || 0,
                 successful_calls: parseInt(document.getElementById('successful_calls').value) || 0,
                 remarks: document.getElementById('remarks').value
-            }]).select().single();
+            };
 
-            if (rError) { alert("Lỗi: " + rError.message); btn.disabled = false; return; }
+            let reportId = currentReportId;
+            if (currentReportId) {
+                await supabaseClient.from('daily_reports').update(reportData).eq('id', currentReportId);
+            } else {
+                const { data: newReport } = await supabaseClient.from('daily_reports').insert([reportData]).select().single();
+                reportId = newReport.id;
+            }
+
+            if (currentReportId) await supabaseClient.from('report_details').delete().eq('report_id', currentReportId);
 
             const details = locations.map(loc => ({
-                report_id: report.id,
+                report_id: reportId,
                 location_id: loc.id,
                 booked_count: parseInt(document.getElementById(`booked_${loc.id}`).value) || 0,
                 attended_count: parseInt(document.getElementById(`attended_${loc.id}`).value) || 0
             }));
 
             await supabaseClient.from('report_details').insert(details);
-            alert("Thành công!");
-            window.location.reload();
+            alert("Đã lưu dữ liệu ngày " + selectedDate);
+            btn.disabled = false;
+            loadExistingData();
         }
+
+        async function signIn() { await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
+        async function signOut() { await supabaseClient.auth.signOut(); window.location.reload(); }
         checkUser();
     </script>
 </body>
