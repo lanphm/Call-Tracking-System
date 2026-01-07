@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống Báo Cáo Chiến Lược</title>
+    <title>Báo Cáo Quản Trị Chiến Lược</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,51 +12,42 @@
     <div class="max-w-7xl mx-auto space-y-6">
         
         <div class="bg-slate-900 p-8 rounded-[40px] text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
-            <div>
-                <h1 class="text-3xl font-black italic uppercase tracking-tighter italic">Strategic Analytics</h1>
-                <div class="flex items-center gap-2 mt-1">
-                    <span class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Năm báo cáo:</span>
-                    <select id="year-filter" onchange="handleYearChange()" class="bg-transparent text-blue-400 text-sm font-black border-none outline-none focus:ring-0 cursor-pointer">
-                        <option value="2026" class="text-slate-900">2026</option>
-                        <option value="2025" class="text-slate-900">2025</option>
-                        <option value="2024" class="text-slate-900">2024</option>
+            <div class="flex items-center gap-6">
+                <div>
+                    <h1 class="text-3xl font-black italic uppercase tracking-tighter">Strategic Hub</h1>
+                    <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Báo cáo hiệu suất đa tầng</p>
+                </div>
+                <div class="bg-white/5 p-2 px-4 rounded-2xl border border-white/10">
+                    <span class="text-[9px] block opacity-50 uppercase font-black">Năm</span>
+                    <select id="year-filter" onchange="initMonthOptions()" class="bg-transparent text-white text-sm font-black outline-none border-none cursor-pointer">
+                        <option value="2026">2026</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
                     </select>
                 </div>
             </div>
             
-            <div class="flex gap-4">
-                <div class="flex bg-white/5 p-2 rounded-2xl border border-white/10 items-center gap-2">
-                    <select id="period-type" onchange="updatePeriodOptions()" class="bg-slate-800 text-white text-[10px] font-black uppercase px-3 py-2 rounded-xl outline-none border-none">
-                        <option value="month">Xem theo Tháng</option>
-                        <option value="week">Xem theo Tuần</option>
-                    </select>
-                    <select id="period-value" onchange="loadData()" class="bg-white text-slate-900 text-[10px] font-black uppercase px-3 py-2 rounded-xl outline-none border-none">
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="bg-white/5 p-2 px-4 rounded-2xl border border-white/10">
+                    <span class="text-[9px] block opacity-50 uppercase font-black">Tháng</span>
+                    <select id="month-filter" onchange="initWeekOptions()" class="bg-transparent text-white text-sm font-black outline-none border-none cursor-pointer"></select>
+                </div>
+
+                <div class="bg-white/10 p-2 px-4 rounded-2xl border border-blue-500/50 shadow-lg shadow-blue-500/10">
+                    <span class="text-[9px] block text-blue-400 uppercase font-black">Chọn Tuần</span>
+                    <select id="week-filter" onchange="loadData()" class="bg-transparent text-white text-[11px] font-bold outline-none border-none cursor-pointer">
                         </select>
                 </div>
-                <button onclick="location.href='index.html'" class="bg-blue-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase italic hover:bg-blue-700 transition-all">Trang chủ</button>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm text-[11px]">
-            <div class="p-4 bg-blue-50/50 rounded-2xl border-l-4 border-blue-400">
-                <h4 class="font-black text-blue-600 uppercase mb-1">● KẾT QUẢ</h4>
-                <p><b>Thành công:</b> Khách thực tế đã đến chi nhánh.<br><b>% Chốt:</b> Success / Total Call.</p>
-            </div>
-            <div class="p-4 bg-orange-50/50 rounded-2xl border-l-4 border-orange-400">
-                <h4 class="font-black text-orange-600 uppercase mb-1">● CHẤT LƯỢNG</h4>
-                <p><b>Warm/Hot:</b> Khách hàng tiềm năng cao.<br><b>Follow-up:</b> Khách cần chăm sóc thêm.</p>
-            </div>
-            <div class="p-4 bg-red-50/50 rounded-2xl border-l-4 border-red-400">
-                <h4 class="font-black text-red-600 uppercase mb-1">● HAO HỤT</h4>
-                <p><b>Lỗi:</b> Tỉ lệ data sai hoặc không phản hồi.</p>
+                <button onclick="location.href='index.html'" class="bg-blue-600 px-6 py-3 rounded-2xl text-[10px] font-black uppercase italic hover:bg-blue-700 transition-all">Trang chủ</button>
             </div>
         </div>
 
         <div class="grid lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-[40px] shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-6 bg-slate-900 text-white font-black italic uppercase text-xs tracking-widest flex justify-between">
-                    <span>Hiệu suất Nhân viên</span>
-                    <span id="staff-period-label" class="text-blue-400 text-[10px]"></span>
+                <div class="p-6 bg-slate-900 text-white font-black italic uppercase text-xs tracking-widest flex justify-between items-center">
+                    <span>Xếp hạng Nhân viên</span>
+                    <div id="stats-summary" class="text-[9px] bg-white/10 px-3 py-1 rounded-full text-blue-300"></div>
                 </div>
                 <table class="w-full text-left text-sm">
                     <thead class="bg-slate-50 text-[9px] font-black uppercase text-slate-500 border-b">
@@ -72,11 +63,11 @@
             </div>
 
             <div class="bg-white rounded-[40px] shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-6 bg-slate-100 font-black italic uppercase text-xs tracking-widest text-slate-600">Chi tiết theo giai đoạn</div>
+                <div class="p-6 bg-slate-100 font-black italic uppercase text-xs tracking-widest text-slate-600">Nhật ký chi tiết (Theo Thứ)</div>
                 <table class="w-full text-left text-sm">
                     <thead class="bg-slate-50 text-[9px] font-black uppercase text-slate-500 border-b">
                         <tr>
-                            <th class="p-4">Thời gian</th>
+                            <th class="p-4">Thứ / Ngày</th>
                             <th class="p-4 text-center">Call</th>
                             <th class="p-4 text-center">Success</th>
                             <th class="p-4 text-center">Hot</th>
@@ -88,7 +79,6 @@
         </div>
 
         <div class="bg-white p-8 rounded-[40px] shadow-sm border border-slate-200">
-            <h3 class="text-[10px] font-black uppercase text-slate-400 mb-6 italic">Biểu đồ xu hướng chốt khách</h3>
             <canvas id="mainChart" height="100"></canvas>
         </div>
     </div>
@@ -97,71 +87,95 @@
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
         let myChart = null;
 
-        // Khởi tạo options cho combo tháng/tuần
-        function updatePeriodOptions() {
-            const year = document.getElementById('year-filter').value;
-            const type = document.getElementById('period-type').value;
-            const select = document.getElementById('period-value');
+        function initMonthOptions() {
+            const select = document.getElementById('month-filter');
             const now = new Date();
-            const currentYear = now.getFullYear().toString();
-            
+            const yearFilter = document.getElementById('year-filter').value;
             select.innerHTML = '';
+            for (let i = 1; i <= 12; i++) {
+                const opt = document.createElement('option');
+                opt.value = i; opt.text = `Tháng ${i}`;
+                if (yearFilter === now.getFullYear().toString() && i === (now.getMonth() + 1)) opt.selected = true;
+                select.appendChild(opt);
+            }
+            initWeekOptions();
+        }
 
-            if (type === 'month') {
-                for (let i = 1; i <= 12; i++) {
-                    const opt = document.createElement('option');
-                    opt.value = i; opt.text = `Tháng ${i}`;
-                    if (year === currentYear && i === (now.getMonth() + 1)) opt.selected = true;
-                    select.appendChild(opt);
-                }
-            } else {
-                for (let i = 1; i <= 52; i++) {
-                    const opt = document.createElement('option');
-                    opt.value = i; opt.text = `Tuần ${i}`;
-                    // Tạm thời chọn tuần 1 hoặc tuần hiện tại logic phức tạp hơn nên default tuần 1 nếu là năm cũ
-                    select.appendChild(opt);
-                }
+        function getWeekRange(year, weekNo) {
+            const firstDayOfYear = new Date(year, 0, 1);
+            const days = (weekNo - 1) * 7;
+            const weekStart = new Date(year, 0, firstDayOfYear.getDate() + days);
+            // Chuẩn hóa về Thứ 2
+            const day = weekStart.getDay();
+            const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(weekStart.setDate(diff));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            return { start: monday, end: sunday };
+        }
+
+        function initWeekOptions() {
+            const year = document.getElementById('year-filter').value;
+            const month = document.getElementById('month-filter').value;
+            const weekSelect = document.getElementById('week-filter');
+            weekSelect.innerHTML = '<option value="all">Tất cả các tuần trong tháng</option>';
+
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDay = new Date(year, month, 0);
+            
+            // Tính số tuần bắt đầu và kết thúc của tháng
+            const getWeek = (d) => {
+                const date = new Date(d.getTime());
+                date.setHours(0, 0, 0, 0);
+                date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+                const week1 = new Date(date.getFullYear(), 0, 4);
+                return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+            };
+
+            let startW = getWeek(firstDay);
+            let endW = getWeek(lastDay);
+
+            for (let w = startW; w <= endW; w++) {
+                const range = getWeekRange(year, w);
+                const label = `Tuần ${w} (${range.start.getDate()}/${range.start.getMonth()+1} - ${range.end.getDate()}/${range.end.getMonth()+1})`;
+                const opt = new Option(label, w);
+                weekSelect.add(opt);
             }
             loadData();
         }
 
-        function handleYearChange() {
-            const year = document.getElementById('year-filter').value;
-            const typeSelect = document.getElementById('period-type');
-            const currentYear = new Date().getFullYear().toString();
-
-            // Đề nghị: Nếu năm cũ, default xem theo Tháng để báo cáo gọn
-            if (year !== currentYear) {
-                typeSelect.value = 'month';
-            }
-            updatePeriodOptions();
-        }
-
         async function loadData() {
             const year = document.getElementById('year-filter').value;
-            const type = document.getElementById('period-type').value;
-            const val = document.getElementById('period-value').value;
+            const month = document.getElementById('month-filter').value;
+            const week = document.getElementById('week-filter').value;
             
-            let query = supabaseClient.from('daily_reports').select(`*, user_permissions(full_name), report_details(*)`);
-
-            if (type === 'month') {
-                const start = `${year}-${val.padStart(2, '0')}-01`;
-                const end = `${year}-${val.padStart(2, '0')}-31`;
-                query = query.gte('report_date', start).lte('report_date', end);
+            let start, end;
+            if (week === 'all') {
+                start = `${year}-${month.padStart(2, '0')}-01`;
+                end = new Date(year, month, 0).toISOString().split('T')[0];
             } else {
-                // Logic lọc tuần (giản lược)
-                const start = new Date(year, 0, (val - 1) * 7 + 1).toISOString();
-                const end = new Date(year, 0, val * 7 + 1).toISOString();
-                query = query.gte('report_date', start).lte('report_date', end);
+                const range = getWeekRange(year, week);
+                start = range.start.toISOString().split('T')[0];
+                end = range.end.toISOString().split('T')[0];
             }
 
-            const { data, error } = await query.order('report_date', { ascending: true });
+            const { data, error } = await supabaseClient.from('daily_reports')
+                .select(`*, user_permissions(full_name), report_details(*)`)
+                .gte('report_date', start).lte('report_date', end)
+                .order('report_date', { ascending: true });
+
             if (!error) renderReports(data);
+        }
+
+        function getDayName(dateString) {
+            const days = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+            return days[new Date(dateString).getDay()];
         }
 
         function renderReports(data) {
             const staffPivot = {};
             const timePivot = {};
+            let totalS = 0, totalC = 0;
 
             data.forEach(r => {
                 if (r.total_calls <= 0) return;
@@ -169,6 +183,8 @@
                 if (!staffPivot[name]) staffPivot[name] = { c: 0, s: 0 };
                 staffPivot[name].c += r.total_calls;
                 staffPivot[name].s += r.successful_calls;
+                totalS += r.successful_calls;
+                totalC += r.total_calls;
 
                 const date = r.report_date;
                 if (!timePivot[date]) timePivot[date] = { c: 0, s: 0, h: 0 };
@@ -177,17 +193,22 @@
                 timePivot[date].h += r.hot_leads;
             });
 
-            document.getElementById('pivot-staff-body').innerHTML = Object.entries(staffPivot).map(([n, v]) => `
-                <tr class="border-t hover:bg-slate-50 font-bold">
-                    <td class="p-4 text-xs italic text-slate-800">${n}</td>
+            document.getElementById('stats-summary').innerText = `${totalC} CALL | ${totalS} SUCCESS`;
+
+            document.getElementById('pivot-staff-body').innerHTML = Object.entries(staffPivot).sort((a,b) => b[1].s - a[1].s).map(([n, v]) => `
+                <tr class="border-t hover:bg-slate-50 font-bold text-xs">
+                    <td class="p-4 italic text-slate-800">${n}</td>
                     <td class="p-4 text-center">${v.c}</td>
                     <td class="p-4 text-center text-blue-600">${v.s}</td>
                     <td class="p-4 text-center"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px]">${((v.s/(v.c||1))*100).toFixed(1)}%</span></td>
                 </tr>`).join('');
 
             document.getElementById('pivot-time-body').innerHTML = Object.entries(timePivot).reverse().map(([d, v]) => `
-                <tr class="border-t hover:bg-slate-50">
-                    <td class="p-4 text-[11px] font-bold text-slate-400">${d}</td>
+                <tr class="border-t hover:bg-slate-50 text-xs">
+                    <td class="p-4 font-bold text-slate-500">
+                        <span class="text-[9px] uppercase block opacity-50">${getDayName(d)}</span>
+                        ${d.split('-').reverse().join('/')}
+                    </td>
                     <td class="p-4 text-center font-bold">${v.c}</td>
                     <td class="p-4 text-center text-blue-600 font-black">${v.s}</td>
                     <td class="p-4 text-center text-red-500 font-black">${v.h}</td>
@@ -197,14 +218,17 @@
             myChart = new Chart(document.getElementById('mainChart'), {
                 type: 'line',
                 data: {
-                    labels: data.map(r => r.report_date),
-                    datasets: [{ label: 'Thành công', data: data.map(r => r.successful_calls), borderColor: '#3b82f6', tension: 0.4, borderWeight: 4, pointRadius: 2 }]
+                    labels: data.map(r => `${getDayName(r.report_date)} (${r.report_date.split('-')[2]})`),
+                    datasets: [{ 
+                        label: 'Thành công', data: data.map(r => r.successful_calls), 
+                        borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.05)', fill: true, tension: 0.4, borderWeight: 4, pointRadius: 4 
+                    }]
                 },
-                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } } } }
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
             });
         }
 
-        window.onload = handleYearChange;
+        window.onload = initMonthOptions;
     </script>
 </body>
 </html>
