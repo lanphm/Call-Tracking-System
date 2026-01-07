@@ -50,9 +50,9 @@
 
     <script>
         // 1. Cấu hình - THAY THÔNG TIN CỦA BẠN VÀO ĐÂY
-        const SUPABASE_URL = "https://ilxngmrnsghlgfqjxfni.supabase.com";
-        const SUPABASE_ANON_KEY = "sb_publishable_-I0b_tYqzQF4Vk1i6nYGqA_pg0opuN_";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = "https://ilxngmrnsghlgfqjxfni.supabase.com";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // Hãy dùng mã ANON KEY đầy đủ của bạn
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let locations = [];
 
@@ -134,4 +134,5 @@
         checkUser();
     </script>
 </body>
+
 </html>
