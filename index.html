@@ -13,52 +13,54 @@
         <h1 class="text-xl font-bold mb-6 text-center text-blue-700 uppercase">Báo Cáo Hiệu Suất</h1>
         
         <div id="login-section" class="py-10 text-center">
-            <button onclick="signIn()" class="w-full bg-white border border-gray-300 px-4 py-3 rounded-lg shadow-sm hover:bg-gray-50 flex items-center justify-center font-bold">
-                <img src="https://www.google.com/favicon.ico" class="w-5 h-5 mr-3"> Đăng nhập bằng Google
+            <button onclick="signIn()" id="btn-login" class="w-full bg-white border border-gray-300 px-4 py-3 rounded-lg shadow-sm hover:bg-gray-50 flex items-center justify-center font-bold">
+                Đăng nhập bằng Google
             </button>
+            <p id="log-status" class="text-[10px] text-gray-400 mt-2"></p>
         </div>
 
         <div id="pending-section" class="hidden text-center py-10">
-            <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg text-amber-700">
-                <p class="font-bold">Tài khoản đang chờ duyệt!</p>
-                <p class="text-xs mt-2" id="pending-email"></p>
+            <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg text-amber-700 text-sm">
+                Tài khoản đang chờ duyệt.
             </div>
-            <button onclick="signOut()" class="mt-4 text-xs underline text-gray-400">Đăng nhập tài khoản khác</button>
+            <button onclick="signOut()" class="mt-4 text-xs underline">Thoát</button>
         </div>
 
         <div id="form-section" class="hidden space-y-4">
-            <div class="flex justify-between items-center bg-blue-600 p-2 rounded text-white text-[10px]">
-                <span id="user-email"></span>
-                <button onclick="signOut()" class="underline uppercase">Thoát</button>
+            <div class="flex justify-between items-center bg-gray-800 p-2 rounded text-white text-[10px]">
+                <span id="user-display"></span>
+                <button onclick="signOut()" class="underline">THOÁT</button>
+            </div>
+            
+            <div id="admin-tools" class="hidden grid grid-cols-2 gap-2">
+                <button onclick="location.href='report.html'" class="bg-green-600 text-white py-2 rounded text-[10px] font-bold">📊 BÁO CÁO</button>
+                <button onclick="location.href='admin.html'" class="bg-purple-600 text-white py-2 rounded text-[10px] font-bold">⚙️ QUẢN TRỊ</button>
             </div>
 
-            <div id="admin-tools" class="hidden grid grid-cols-2 gap-2 border-b pb-4">
-                <button onclick="window.location.href='report.html'" class="bg-green-600 text-white py-2 rounded text-[10px] font-bold uppercase shadow">📊 Báo Cáo</button>
-                <button onclick="window.location.href='admin.html'" class="bg-purple-600 text-white py-2 rounded text-[10px] font-bold uppercase shadow">⚙️ Quản Trị</button>
+            <input type="date" id="report_date" class="w-full p-2 border rounded font-bold">
+            <div class="grid grid-cols-2 gap-2">
+                <input type="number" id="total_calls" placeholder="Tổng gọi" class="p-2 border rounded text-sm">
+                <input type="number" id="successful_calls" placeholder="Thành công" class="p-2 border rounded text-sm">
             </div>
-
-            <div class="p-4 bg-gray-50 rounded">
-                <p class="text-center text-sm italic text-gray-500">Hệ thống đã sẵn sàng. <br> Chọn ngày để bắt đầu nhập liệu.</p>
-                <input type="date" id="report_date" onchange="loadExistingData()" class="w-full mt-2 p-2 border rounded font-bold">
-            </div>
-            <div id="location-inputs" class="space-y-2"></div>
-            <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-700 text-white py-3 rounded-lg font-bold shadow-lg">LƯU DỮ LIỆU</button>
+            <div id="location-inputs" class="space-y-2 border-t pt-2"></div>
+            <button onclick="submitReport()" class="w-full bg-blue-600 text-white py-3 rounded font-bold shadow-lg">LƯU DỮ LIỆU</button>
         </div>
     </div>
 
     <script>
-        // Khởi tạo Supabase ngay lập tức
+        // Khởi tạo client
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
         async function signIn() {
-            // Ép Google luôn hiện bảng chọn tài khoản để tránh lỗi treo redirect
-            await supabaseClient.auth.signInWithOAuth({
+            document.getElementById('log-status').innerText = "Đang kết nối...";
+            const { error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
                 options: { 
                     redirectTo: window.location.origin,
                     queryParams: { prompt: 'select_account' }
                 }
             });
+            if (error) alert("Lỗi: " + error.message);
         }
 
         async function signOut() {
@@ -70,36 +72,44 @@
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return;
 
-            // Kiểm tra quyền
-            let { data: perm } = await supabaseClient.from('user_permissions').select('*').eq('email', user.email).maybeSingle();
+            const { data: perm } = await supabaseClient.from('user_permissions')
+                .select('*').eq('email', user.email).maybeSingle();
 
-            if (!perm) {
-                // Tự động thêm vào danh sách chờ nếu chưa có
-                const { data: newPerm } = await supabaseClient.from('user_permissions').insert([{ 
-                    email: user.email, 
-                    full_name: user.user_metadata.full_name || 'Người dùng mới', 
-                    role: 'pending' 
-                }]).select().single();
-                perm = newPerm;
-            }
-
-            if (perm.role === 'pending') {
+            if (!perm || perm.role === 'pending') {
+                if (!perm) {
+                    await supabaseClient.from('user_permissions').insert([{ 
+                        email: user.email, 
+                        full_name: user.user_metadata.full_name, 
+                        role: 'pending' 
+                    }]);
+                }
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('pending-section').classList.remove('hidden');
-                document.getElementById('pending-email').innerText = user.email;
             } else {
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('form-section').classList.remove('hidden');
-                document.getElementById('user-email').innerText = user.email;
+                document.getElementById('user-display').innerText = user.email;
                 if (perm.role === 'admin') document.getElementById('admin-tools').classList.remove('hidden');
                 
-                // Load dữ liệu ban đầu
                 document.getElementById('report_date').valueAsDate = new Date();
-                // (Thêm các hàm loadLocations, loadExistingData của bạn vào đây)
+                loadLocations();
             }
         }
 
-        checkUser();
+        async function loadLocations() {
+            const { data } = await supabaseClient.from('locations').select('*').eq('is_active', true);
+            const container = document.getElementById('location-inputs');
+            container.innerHTML = data.map(loc => `
+                <div class="flex items-center gap-2 bg-gray-50 p-2 rounded border">
+                    <span class="flex-1 text-xs font-bold">${loc.name}</span>
+                    <input type="number" id="booked_${loc.id}" placeholder="Book" class="w-16 p-1 border rounded text-center text-xs">
+                    <input type="number" id="attended_${loc.id}" placeholder="Atnd" class="w-16 p-1 border rounded text-center text-xs">
+                </div>
+            `).join('');
+        }
+
+        // Chạy kiểm tra ngay khi load
+        window.onload = checkUser;
     </script>
 </body>
 </html>
