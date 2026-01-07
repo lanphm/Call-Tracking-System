@@ -3,87 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nhập Báo Cáo - Daily Input</title>
+    <title>Input Calendar - Strategic Hub</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <script src="./config.js"></script>
+    <style>
+        /* Tùy chỉnh màu sắc cho Calendar để hợp với giao diện Dark Mode của bạn */
+        .fc { --fc-border-color: #e2e8f0; --fc-button-bg-color: #1e293b; --fc-button-border-color: #1e293b; }
+        .fc .fc-toolbar-title { font-size: 14px; font-weight: 900; text-transform: uppercase; }
+        .fc-daygrid-day.fc-day-today { background-color: #eff6ff !important; }
+        .fc-event { cursor: pointer; border-radius: 4px; border: none; padding: 2px; }
+        .has-report { background-color: #3b82f6 !important; } /* Màu xanh cho ngày đã có báo cáo */
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-900 antialiased">
-    <div class="max-w-xl mx-auto p-4 sm:p-8 space-y-6">
+<body class="bg-slate-50 text-slate-900 pb-10">
+    <div class="max-w-4xl mx-auto p-4 space-y-6">
         
         <div class="flex justify-between items-center bg-slate-900 p-6 rounded-[30px] text-white shadow-xl">
-            <div>
-                <h1 class="text-xl font-black italic uppercase tracking-tighter">Daily Report</h1>
-                <p id="user-name" class="text-[9px] text-blue-400 font-bold uppercase tracking-widest italic">Đang tải...</p>
-            </div>
-            <button onclick="location.href='index.html'" class="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase">Đóng</button>
+            <h1 class="text-xl font-black italic uppercase tracking-tighter">Input Hub</h1>
+            <button onclick="location.href='index.html'" class="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase">Menu</button>
         </div>
 
-        <div class="bg-white p-6 rounded-[40px] shadow-sm border border-slate-200 space-y-6">
-            
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest">Ngày báo cáo</label>
-                    <input type="date" id="report-date" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest">Phòng khám</label>
-                    <select id="location-id" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-bold text-sm outline-none appearance-none cursor-pointer"></select>
-                </div>
+        <div class="grid lg:grid-cols-5 gap-6">
+            <div class="lg:col-span-3 bg-white p-6 rounded-[40px] shadow-sm border border-slate-200">
+                <div id="calendar"></div>
             </div>
 
-            <hr class="border-slate-100">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white p-6 rounded-[40px] shadow-sm border border-slate-200 space-y-4">
+                    <h2 class="text-[10px] font-black uppercase text-blue-600 tracking-widest italic">● Chi tiết báo cáo</h2>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-[8px] font-black uppercase text-slate-400 ml-2">Ngày đã chọn</span>
+                            <input type="text" id="display-date" readonly class="w-full bg-slate-50 p-4 rounded-2xl border-none font-black text-slate-600 outline-none">
+                            <input type="hidden" id="report-date">
+                        </div>
+                        
+                        <div>
+                            <span class="text-[8px] font-black uppercase text-slate-400 ml-2">Phòng khám</span>
+                            <select id="location-id" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-bold text-sm outline-none appearance-none cursor-pointer"></select>
+                        </div>
 
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest italic">1. Tổng số cuộc gọi (Total Calls)</label>
-                    <input type="number" id="total-calls" placeholder="0" class="w-full bg-slate-50 p-5 rounded-2xl border-none font-black text-2xl outline-none focus:bg-blue-50 transition-all text-blue-600">
-                </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-slate-50 p-3 rounded-2xl">
+                                <span class="block text-[8px] font-black uppercase text-slate-400 mb-1">Total Call</span>
+                                <input type="number" id="total-calls" placeholder="0" class="bg-transparent w-full font-black text-lg outline-none">
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-2xl border border-green-100">
+                                <span class="block text-[8px] font-black uppercase text-green-500 mb-1">Success</span>
+                                <input type="number" id="success-calls" placeholder="0" class="bg-transparent w-full font-black text-lg outline-none text-green-600">
+                            </div>
+                        </div>
 
-                <div>
-                    <label class="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest italic">2. Cuộc gọi thành công (Successful)</label>
-                    <input type="number" id="success-calls" placeholder="0" class="w-full bg-slate-50 p-5 rounded-2xl border-none font-black text-2xl outline-none focus:bg-green-50 transition-all text-green-600">
-                </div>
+                        <div class="bg-slate-50 p-3 rounded-2xl">
+                            <span class="block text-[8px] font-black uppercase text-red-400 mb-1">Hot Leads</span>
+                            <input type="number" id="hot-leads" placeholder="0" class="bg-transparent w-full font-black text-lg outline-none text-red-500">
+                        </div>
 
-                <div>
-                    <label class="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest italic">3. Khách hàng tiềm năng (Hot Leads)</label>
-                    <input type="number" id="hot-leads" placeholder="0" class="w-full bg-slate-50 p-5 rounded-2xl border-none font-black text-2xl outline-none focus:bg-red-50 transition-all text-red-600">
+                        <textarea id="note" rows="2" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-medium text-xs outline-none" placeholder="Ghi chú..."></textarea>
+                        
+                        <button onclick="submitReport()" id="btn-submit" class="w-full bg-slate-900 text-white p-5 rounded-[24px] font-black uppercase italic shadow-lg active:scale-95 transition-all">Lưu báo cáo</button>
+                    </div>
                 </div>
             </div>
-
-            <div>
-                <label class="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest">Ghi chú (Nếu có)</label>
-                <textarea id="note" rows="2" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-medium text-sm outline-none" placeholder="Nhập ghi chú quan trọng..."></textarea>
-            </div>
-
-            <button onclick="submitReport()" id="btn-submit" class="w-full bg-slate-900 text-white p-5 rounded-[24px] font-black uppercase italic shadow-2xl active:scale-95 transition-all flex justify-center items-center gap-2">
-                Gửi báo cáo ngay
-            </button>
         </div>
     </div>
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-        let currentUserEmail = "";
+        let calendar;
+        let userEmail = "";
 
-        async function initForm() {
-            // 1. Kiểm tra Auth
+        async function initPage() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) { location.href = 'login.html'; return; }
-            currentUserEmail = session.user.email;
-            document.getElementById('user-name').innerText = `Nhân viên: ${currentUserEmail}`;
+            userEmail = session.user.email;
 
-            // 2. Set ngày mặc định là hôm nay
-            document.getElementById('report-date').valueAsDate = new Date();
-
-            // 3. Load danh sách phòng khám
+            // Load Phòng khám
             const { data: locs } = await supabaseClient.from('locations').select('*').eq('is_active', true);
             const locSelect = document.getElementById('location-id');
             locs.forEach(l => locSelect.add(new Option(l.name, l.id)));
+
+            initCalendar();
+        }
+
+        async function initCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'vi',
+                headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+                selectable: true,
+                // Khi click vào ngày trên lịch
+                dateClick: function(info) {
+                    document.getElementById('report-date').value = info.dateStr;
+                    document.getElementById('display-date').value = info.date.toLocaleDateString('vi-VN');
+                    loadReportForDate(info.dateStr);
+                },
+                // Load dữ liệu từ Supabase để hiện lên lịch
+                events: async function(info, successCallback, failureCallback) {
+                    const { data, error } = await supabaseClient
+                        .from('daily_reports')
+                        .select('report_date, successful_calls')
+                        .eq('employee_email', userEmail);
+                    
+                    if (data) {
+                        const events = data.map(r => ({
+                            start: r.report_date,
+                            title: `✓ ${r.successful_calls} S.C`,
+                            className: 'has-report'
+                        }));
+                        successCallback(events);
+                    }
+                }
+            });
+            calendar.render();
+            
+            // Mặc định chọn ngày hôm nay
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('report-date').value = todayStr;
+            document.getElementById('display-date').value = new Date().toLocaleDateString('vi-VN');
+            loadReportForDate(todayStr);
+        }
+
+        async function loadReportForDate(dateStr) {
+            // Kiểm tra xem ngày đó đã có báo cáo chưa để điền vào form
+            const { data } = await supabaseClient
+                .from('daily_reports')
+                .select('*')
+                .eq('employee_email', userEmail)
+                .eq('report_date', dateStr)
+                .maybeSingle();
+
+            if (data) {
+                document.getElementById('location-id').value = data.location_id;
+                document.getElementById('total-calls').value = data.total_calls;
+                document.getElementById('success-calls').value = data.successful_calls;
+                document.getElementById('hot-leads').value = data.hot_leads;
+                document.getElementById('note').value = data.note;
+                document.getElementById('btn-submit').innerText = "Cập nhật báo cáo";
+            } else {
+                document.getElementById('total-calls').value = '';
+                document.getElementById('success-calls').value = '';
+                document.getElementById('hot-leads').value = '';
+                document.getElementById('note').value = '';
+                document.getElementById('btn-submit').innerText = "Lưu báo cáo";
+            }
         }
 
         async function submitReport() {
-            const btn = document.getElementById('btn-submit');
             const data = {
                 report_date: document.getElementById('report-date').value,
                 location_id: document.getElementById('location-id').value,
@@ -91,30 +161,20 @@
                 successful_calls: parseInt(document.getElementById('success-calls').value) || 0,
                 hot_leads: parseInt(document.getElementById('hot-leads').value) || 0,
                 note: document.getElementById('note').value,
-                employee_email: currentUserEmail
+                employee_email: userEmail
             };
 
-            if (data.total_calls < data.successful_calls) {
-                alert("Lỗi: Số cuộc gọi thành công không thể lớn hơn tổng số cuộc gọi!");
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerText = "Đang gửi...";
-
-            const { error } = await supabaseClient.from('daily_reports').insert([data]);
-
-            if (error) {
-                alert("Lỗi khi gửi: " + error.message);
-                btn.disabled = false;
-                btn.innerText = "Thử lại";
+            const { error } = await supabaseClient.from('daily_reports').upsert([data], { onConflict: 'report_date, employee_email' });
+            
+            if (!error) {
+                alert("Đã lưu!");
+                calendar.refetchEvents();
             } else {
-                alert("Gửi báo cáo thành công!");
-                location.href = 'index.html';
+                alert("Lỗi: " + error.message);
             }
         }
 
-        window.onload = initForm;
+        window.onload = initPage;
     </script>
 </body>
 </html>
