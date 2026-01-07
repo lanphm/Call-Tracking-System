@@ -3,59 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Báo Cáo Call Tracking</title>
+    <title>Hệ Thống Báo Cáo</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-100 p-2 sm:p-4 font-sans">
-    <div id="app" class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-2xl min-h-[450px] relative overflow-hidden">
+<body class="bg-gray-100 p-4">
+    <div id="app" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg mt-10">
+        <h1 class="text-xl font-bold mb-6 text-center text-blue-700 uppercase">Báo Cáo Hiệu Suất</h1>
         
-        <div class="text-center mb-8">
-            <h1 class="text-2xl font-black text-blue-700 uppercase tracking-tighter">Báo Cáo Hiệu Suất</h1>
-            <div class="h-1 w-16 bg-blue-600 mx-auto mt-1 rounded-full"></div>
-        </div>
-
-        <div id="login-section" class="py-12 flex flex-col items-center justify-center">
-            <p class="text-slate-400 text-sm mb-6 italic">Hệ thống quản lý nội bộ</p>
-            <button onclick="signIn()" class="group bg-white border-2 border-slate-200 px-6 py-4 rounded-xl shadow-sm hover:border-blue-500 hover:shadow-md transition-all flex items-center justify-center w-full font-bold text-slate-700">
-                <img src="https://www.google.com/favicon.ico" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform">
-                Đăng nhập bằng Google
+        <div id="login-section" class="py-10 text-center">
+            <button onclick="signIn()" class="w-full bg-white border border-gray-300 px-4 py-3 rounded-lg shadow-sm hover:bg-gray-50 flex items-center justify-center font-bold">
+                <img src="https://www.google.com/favicon.ico" class="w-5 h-5 mr-3"> Đăng nhập bằng Google
             </button>
         </div>
 
-        <div id="pending-section" class="hidden text-center py-10 animate-pulse">
-            <div class="bg-amber-50 border-2 border-amber-100 p-6 rounded-2xl">
-                <div class="text-4xl mb-4 text-amber-500">⏳</div>
-                <h3 class="text-amber-800 font-black uppercase text-xs mb-2 tracking-widest">Đang chờ phê duyệt</h3>
-                <p class="text-xs text-amber-700 leading-relaxed">
-                    Chào <span id="pending-email" class="font-bold"></span>, tài khoản của bạn đang được hệ thống xem xét. Vui lòng liên hệ Admin để kích hoạt.
-                </p>
+        <div id="pending-section" class="hidden text-center py-10">
+            <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg text-amber-700">
+                <p class="font-bold">Tài khoản đang chờ duyệt!</p>
+                <p class="text-xs mt-2" id="pending-email"></p>
             </div>
-            <button onclick="signOut()" class="mt-8 text-[10px] text-slate-400 underline uppercase font-bold tracking-widest hover:text-red-500">Đăng nhập tài khoản khác</button>
+            <button onclick="signOut()" class="mt-4 text-xs underline text-gray-400">Đăng nhập tài khoản khác</button>
         </div>
 
-        <div id="form-section" class="hidden space-y-5 pb-4">
-            <div class="flex justify-between items-center bg-slate-900 p-3 rounded-xl text-white shadow-lg">
-                <div class="overflow-hidden">
-                    <span id="user-email" class="text-[9px] block opacity-60 truncate w-32 font-mono"></span>
-                    <span id="user-role-badge" class="text-[10px] font-black uppercase bg-blue-500 text-white px-1.5 rounded-sm italic">Staff</span>
-                </div>
-                <button onclick="signOut()" class="text-[10px] font-black uppercase border border-white/20 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors">Thoát</button>
+        <div id="form-section" class="hidden space-y-4">
+            <div class="flex justify-between items-center bg-blue-600 p-2 rounded text-white text-[10px]">
+                <span id="user-email"></span>
+                <button onclick="signOut()" class="underline uppercase">Thoát</button>
             </div>
 
-            <div id="admin-tools" class="hidden grid grid-cols-2 gap-2 border-b border-slate-100 pb-4">
-                <button onclick="window.location.href='report.html'" class="bg-emerald-600 text-white py-2.5 rounded-lg text-[10px] font-black shadow-md hover:bg-emerald-700 uppercase tracking-wider">📊 Báo Cáo</button>
-                <button onclick="window.location.href='admin.html'" class="bg-indigo-600 text-white py-2.5 rounded-lg text-[10px] font-black shadow-md hover:bg-indigo-700 uppercase tracking-wider">⚙️ Quản Trị</button>
+            <div id="admin-tools" class="hidden grid grid-cols-2 gap-2 border-b pb-4">
+                <button onclick="window.location.href='report.html'" class="bg-green-600 text-white py-2 rounded text-[10px] font-bold uppercase shadow">📊 Báo Cáo</button>
+                <button onclick="window.location.href='admin.html'" class="bg-purple-600 text-white py-2 rounded text-[10px] font-bold uppercase shadow">⚙️ Quản Trị</button>
             </div>
 
-            <div class="bg-blue-50 p-4 rounded-xl border-2 border-blue-100 ring-4 ring-white">
-                <label class="block text-[11px] font-black text-blue-800 uppercase mb-1 tracking-widest">📅 Ngày báo cáo:</label>
-                <input type="date" id="report_date" onchange="loadExistingData()" class="w-full border-none bg-transparent font-black text-xl text-blue-900 focus:ring-0 cursor-pointer">
+            <div class="p-4 bg-gray-50 rounded">
+                <p class="text-center text-sm italic text-gray-500">Hệ thống đã sẵn sàng. <br> Chọn ngày để bắt đầu nhập liệu.</p>
+                <input type="date" id="report_date" onchange="loadExistingData()" class="w-full mt-2 p-2 border rounded font-bold">
             </div>
+            <div id="location-inputs" class="space-y-2"></div>
+            <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-700 text-white py-3 rounded-lg font-bold shadow-lg">LƯU DỮ LIỆU</button>
+        </div>
+    </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Tổng cuộc gọi</label>
-                    <input type="number" id="total_calls" class="w-full bg-transparent font-black text-2xl outline-none text-slate-800" placeholder="0">
-                </div>
+    <script>
+        // Khởi tạo Supabase ngay lập tức
+        const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+        async function signIn() {
+            // Ép Google luôn hiện bảng chọn tài khoản để tránh lỗi treo redirect
+            await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { 
+                    redirectTo: window.location.origin,
+                    queryParams: { prompt: 'select_account' }
+                }
+            });
+        }
+
+        async function signOut() {
+            await supabaseClient.auth.signOut();
+            window.location.reload();
+        }
+
+        async function checkUser() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return;
+
+            // Kiểm tra quyền
+            let { data: perm } = await supabaseClient.from('user_permissions').select('*').eq('email', user.email).maybeSingle();
+
+            if (!perm) {
+                // Tự động thêm vào danh sách chờ nếu chưa có
+                const { data: newPerm } = await supabaseClient.from('user_permissions').insert([{ 
+                    email: user.email, 
+                    full_name: user.user_metadata.full_name || 'Người dùng mới', 
+                    role: 'pending' 
+                }]).select().single();
+                perm = newPerm;
+            }
+
+            if (perm.role === 'pending') {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('pending-section').classList.remove('hidden');
+                document.getElementById('pending-email').innerText = user.email;
+            } else {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('form-section').classList.remove('hidden');
+                document.getElementById('user-email').innerText = user.email;
+                if (perm.role === 'admin') document.getElementById('admin-tools').classList.remove('hidden');
+                
+                // Load dữ liệu ban đầu
+                document.getElementById('report_date').valueAsDate = new Date();
+                // (Thêm các hàm loadLocations, loadExistingData của bạn vào đây)
+            }
+        }
+
+        checkUser();
+    </script>
+</body>
+</html>
