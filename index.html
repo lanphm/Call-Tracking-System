@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Báo cáo Cuộc gọi</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div id="app" class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-6 text-center text-blue-600">Báo Cáo Cuộc Gọi</h1>
+        
+        <div id="login-section" class="text-center">
+            <p class="mb-4 text-gray-600">Vui lòng đăng nhập bằng Google để tiếp tục</p>
+            <button onclick="signIn()" class="bg-white border border-gray-300 px-4 py-2 rounded shadow hover:bg-gray-50 flex items-center justify-center w-full">
+                <img src="https://www.google.com/favicon.ico" class="w-4 h-4 mr-2"> Đăng nhập Google
+            </button>
+        </div>
+
+        <div id="form-section" class="hidden space-y-4">
+            <div class="flex justify-between items-center bg-blue-50 p-2 rounded">
+                <span id="user-email" class="text-sm font-medium"></span>
+                <button onclick="signOut()" class="text-xs text-red-500 underline">Thoát</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium">Tổng cuộc gọi</label>
+                    <input type="number" id="total_calls" class="w-full border p-2 rounded" value="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Thành công</label>
+                    <input type="number" id="successful_calls" class="w-full border p-2 rounded" value="0">
+                </div>
+            </div>
+
+            <div id="location-inputs" class="border-t pt-4">
+                <h3 class="font-bold mb-2">Chi tiết theo cơ sở:</h3>
+                </div>
+
+            <div>
+                <label class="block text-sm font-medium">Ghi chú (OFF/Nghỉ...)</label>
+                <textarea id="remarks" class="w-full border p-2 rounded"></textarea>
+            </div>
+
+            <button onclick="submitReport()" id="btn-submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">GỬI BÁO CÁO</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. Cấu hình - THAY THÔNG TIN CỦA BẠN VÀO ĐÂY
+        const SUPABASE_URL = "https://ilxngmrnsghlgfqjxfni.supabase.com";
+        const SUPABASE_ANON_KEY = "sb_publishable_-I0b_tYqzQF4Vk1i6nYGqA_pg0opuN_";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let locations = [];
+
+        // 2. Kiểm tra trạng thái đăng nhập
+        async function checkUser() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('form-section').classList.remove('hidden');
+                document.getElementById('user-email').innerText = user.email;
+                loadLocations();
+            }
+        }
+
+        // 3. Đăng nhập / Đăng xuất
+        async function signIn() {
+            await supabase.auth.signInWithOAuth({ provider: 'google' });
+        }
+        async function signOut() {
+            await supabase.auth.signOut();
+            window.location.reload();
+        }
+
+        // 4. Lấy danh mục cơ sở từ Database
+        async function loadLocations() {
+            const { data } = await supabase.from('locations').select('*').eq('is_active', true);
+            locations = data;
+            const container = document.getElementById('location-inputs');
+            data.forEach(loc => {
+                const html = `
+                    <div class="mb-4 p-2 bg-gray-50 rounded border">
+                        <p class="font-medium text-blue-800">${loc.name}</p>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <input type="number" placeholder="Booked" id="booked_${loc.id}" class="border p-1 rounded text-sm">
+                            <input type="number" placeholder="Attended" id="attended_${loc.id}" class="border p-1 rounded text-sm">
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        // 5. Gửi dữ liệu
+        async function submitReport() {
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true;
+            btn.innerText = "ĐANG GỬI...";
+
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            // Ghi vào bảng daily_reports
+            const { data: report, error: rError } = await supabase.from('daily_reports').insert([{
+                employee_email: user.email,
+                total_calls: document.getElementById('total_calls').value,
+                successful_calls: document.getElementById('successful_calls').value,
+                remarks: document.getElementById('remarks').value
+            }]).select().single();
+
+            if (rError) {
+                alert("Lỗi: " + rError.message);
+                btn.disabled = false;
+                return;
+            }
+
+            // Ghi vào bảng report_details cho từng cơ sở
+            const details = locations.map(loc => ({
+                report_id: report.id,
+                location_id: loc.id,
+                booked_count: document.getElementById(`booked_${loc.id}`).value || 0,
+                attended_count: document.getElementById(`attended_${loc.id}`).value || 0
+            }));
+
+            await supabase.from('report_details').insert(details);
+
+            alert("Gửi báo cáo thành công!");
+            window.location.reload();
+        }
+
+        checkUser();
+    </script>
+</body>
+</html>
