@@ -10,21 +10,20 @@
 </head>
 <body class="bg-slate-50 p-4 sm:p-8 font-sans">
     <div class="max-w-6xl mx-auto space-y-8">
-        
         <div class="flex justify-between items-center bg-slate-900 p-8 rounded-[40px] text-white shadow-2xl">
             <div>
                 <h1 class="text-3xl font-black uppercase italic tracking-tighter">System Admin</h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase italic tracking-[0.2em]">Quản trị danh sách Whitelist (Google Auth)</p>
+                <p class="text-[10px] text-slate-400 font-bold uppercase italic tracking-[0.2em]">Quản trị danh sách Whitelist</p>
             </div>
-            <a href="index.html" class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl text-[10px] font-black uppercase italic transition-all border border-white/5">Quay lại</a>
+            <a href="index.html" class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl text-[10px] font-black uppercase italic border border-white/5">Quay lại</a>
         </div>
 
         <div class="grid lg:grid-cols-3 gap-8">
             <div class="bg-white p-8 rounded-[40px] shadow-sm border border-slate-200">
-                <h2 class="text-xs font-black uppercase mb-6 text-blue-600 italic tracking-widest border-b pb-4">Cấp quyền nhân sự mới</h2>
+                <h2 class="text-xs font-black uppercase mb-6 text-blue-600 italic tracking-widest border-b pb-4">Cập nhật quyền nhân sự</h2>
                 <div class="space-y-5">
                     <div>
-                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1 italic">Email Google chính xác</label>
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-1 italic">Email Google (Nhập để thêm hoặc sửa)</label>
                         <input type="email" id="add-email" placeholder="example@gmail.com" class="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-black text-sm">
                     </div>
                     <div>
@@ -32,105 +31,100 @@
                         <input type="text" id="add-name" placeholder="Nguyễn Văn A" class="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-black text-sm">
                     </div>
                     <div class="bg-slate-50 p-5 rounded-2xl space-y-4">
-                        <p class="text-[10px] font-black uppercase text-slate-400 mb-2 italic">Phân quyền đa nhiệm:</p>
-                        <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" id="role-staff" checked class="w-5 h-5 rounded-lg border-slate-300 text-blue-600"><span class="text-xs font-black uppercase italic group-hover:text-blue-600">Staff (Được nhập liệu)</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" id="role-viewer" checked class="w-5 h-5 rounded-lg border-slate-300 text-blue-600"><span class="text-xs font-black uppercase italic group-hover:text-blue-600">Viewer (Được xem báo cáo)</span></label>
-                        <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" id="role-admin" class="w-5 h-5 rounded-lg border-slate-300 text-red-600"><span class="text-xs font-black uppercase italic text-red-500 group-hover:text-red-600 underline">Admin (Quản trị hệ thống)</span></label>
+                        <p class="text-[10px] font-black uppercase text-slate-400 mb-2 italic">Chọn quyền hạn:</p>
+                        <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" value="staff" class="role-checkbox w-5 h-5 rounded-lg border-slate-300 text-blue-600"><span class="text-xs font-black uppercase italic group-hover:text-blue-600">Staff (Nhập liệu)</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" value="viewer" class="role-checkbox w-5 h-5 rounded-lg border-slate-300 text-blue-600"><span class="text-xs font-black uppercase italic group-hover:text-blue-600">Viewer (Xem báo cáo)</span></label>
+                        <label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" value="admin" class="role-checkbox w-5 h-5 rounded-lg border-slate-300 text-red-600"><span class="text-xs font-black uppercase italic text-red-500 group-hover:text-red-600">Admin (Quản trị)</span></label>
                     </div>
-                    <button onclick="addNewUser()" class="w-full bg-slate-900 text-white p-5 rounded-[24px] font-black uppercase italic shadow-xl hover:bg-blue-600 transition-all transform active:scale-95">Thêm vào Whitelist</button>
+                    <button onclick="saveUser()" class="w-full bg-slate-900 text-white p-5 rounded-[24px] font-black uppercase italic shadow-xl hover:bg-blue-600 transition-all">Lưu thay đổi</button>
+                    <p class="text-[8px] text-slate-400 text-center italic uppercase">* Nếu email đã tồn tại, hệ thống sẽ ghi đè quyền mới bạn vừa chọn.</p>
                 </div>
             </div>
 
             <div class="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-slate-200">
-                <h2 class="text-xs font-black uppercase mb-6 text-slate-500 italic tracking-widest border-b pb-4">Nhân sự đã cấp quyền</h2>
+                <h2 class="text-xs font-black uppercase mb-6 text-slate-500 italic tracking-widest border-b pb-4">Danh sách Whitelist hiện tại</h2>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
                             <tr class="text-[10px] uppercase font-black text-slate-400 border-b">
                                 <th class="p-4">Họ Tên</th>
                                 <th class="p-4">Email</th>
-                                <th class="p-4">Quyền hạn</th>
-                                <th class="p-4 text-right">Hành động</th>
+                                <th class="p-4">Quyền</th>
+                                <th class="p-4 text-right">Thao tác</th>
                             </tr>
                         </thead>
-                        <tbody id="user-list" class="text-sm font-medium"></tbody>
+                        <tbody id="user-list" class="text-sm"></tbody>
                     </table>
                 </div>
             </div>
-        </div>
-
-        <div class="bg-white p-8 rounded-[40px] shadow-sm border border-slate-200">
-            <h2 class="text-xs font-black uppercase mb-6 text-slate-500 italic tracking-widest border-b pb-4">Quản lý các chi nhánh/Cơ sở</h2>
-            <div class="flex gap-4 mb-8">
-                <input type="text" id="new-loc" placeholder="Nhập tên cơ sở mới..." class="flex-1 bg-slate-50 p-4 rounded-2xl text-sm font-black outline-none border border-transparent focus:border-blue-500">
-                <button onclick="addLoc()" class="bg-slate-900 text-white px-8 rounded-2xl font-black text-xs uppercase italic shadow-lg">Thêm</button>
-            </div>
-            <div id="loc-list" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
         </div>
     </div>
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-        async function init() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) { window.location.href='index.html'; return; }
-            const { data: perm } = await supabaseClient.from('user_permissions').select('role').eq('email', user.email).single();
-            if(!perm || !perm.role.includes('admin')) { alert("Bạn không có quyền Admin!"); window.location.href='index.html'; return; }
-            loadUsers(); loadLocs();
-        }
+        async function init() { loadUsers(); }
 
         async function loadUsers() {
             const { data } = await supabaseClient.from('user_permissions').select('*').order('full_name');
             document.getElementById('user-list').innerHTML = data.map(u => `
                 <tr class="border-b border-slate-50 hover:bg-slate-50 transition-all group">
                     <td class="p-4 font-black italic text-slate-800">${u.full_name}</td>
-                    <td class="p-4 font-mono text-xs text-slate-400 uppercase">${u.email}</td>
-                    <td class="p-4">
-                        <div class="flex flex-wrap gap-1">
-                            ${u.role.map(r => `<span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase ${r==='admin'?'bg-red-100 text-red-600 border border-red-200':'bg-blue-100 text-blue-600 border border-blue-200'}">${r}</span>`).join('')}
-                        </div>
+                    <td class="p-4 font-mono text-xs text-slate-400">${u.email}</td>
+                    <td class="p-4 flex gap-1 flex-wrap">
+                        ${u.role.map(r => `<span class="px-2 py-0.5 rounded text-[8px] font-black uppercase ${r==='admin'?'bg-red-100 text-red-600':'bg-blue-100 text-blue-600'}">${r}</span>`).join('')}
                     </td>
-                    <td class="p-4 text-right"><button onclick="removeUser('${u.id}')" class="text-red-300 hover:text-red-600 font-black text-[10px] uppercase italic opacity-0 group-hover:opacity-100 transition-all">Gỡ quyền</button></td>
+                    <td class="p-4 text-right">
+                        <button onclick="editUser('${u.email}', '${u.full_name}', '${u.role.join(',')}')" class="text-blue-500 hover:underline font-black text-[10px] uppercase italic mr-3">Sửa</button>
+                        <button onclick="removeUser('${u.id}')" class="text-red-300 hover:text-red-600 font-black text-[10px] uppercase italic">Xóa</button>
+                    </td>
                 </tr>`).join('');
         }
 
-        async function addNewUser() {
+        function editUser(email, name, roles) {
+            document.getElementById('add-email').value = email;
+            document.getElementById('add-name').value = name;
+            const roleList = roles.split(',');
+            document.querySelectorAll('.role-checkbox').forEach(cb => {
+                cb.checked = roleList.includes(cb.value);
+            });
+        }
+
+        async function saveUser() {
             const email = document.getElementById('add-email').value.trim().toLowerCase();
             const fullName = document.getElementById('add-name').value.trim();
-            const roles = [];
-            if(document.getElementById('role-staff').checked) roles.push('staff');
-            if(document.getElementById('role-viewer').checked) roles.push('viewer');
-            if(document.getElementById('role-admin').checked) roles.push('admin');
+            const roles = Array.from(document.querySelectorAll('.role-checkbox:checked')).map(cb => cb.value);
 
-            if(!email || !fullName || roles.length === 0) return alert("Vui lòng điền đủ thông tin!");
-            const { error } = await supabaseClient.from('user_permissions').insert([{ email, full_name: fullName, role: roles }]);
-            if(error) alert("Lỗi: Email này có thể đã được cấp quyền trước đó."); 
-            else { 
-                document.getElementById('add-email').value=''; 
-                document.getElementById('add-name').value=''; 
-                alert("Đã thêm " + fullName + " vào Whitelist.");
-                loadUsers(); 
+            if(!email || !fullName || roles.length === 0) return alert("Vui lòng nhập đủ Email, Tên và ít nhất 1 quyền!");
+
+            // Sử dụng upsert với email làm khóa xung đột để thay thế hoàn toàn dòng cũ
+            const { error } = await supabaseClient.from('user_permissions').upsert({
+                email: email,
+                full_name: fullName,
+                role: roles
+            }, { onConflict: 'email' });
+
+            if(error) {
+                alert("Lỗi: " + error.message);
+            } else {
+                alert("Đã cập nhật quyền cho: " + email);
+                resetForm();
+                loadUsers();
             }
         }
 
-        async function removeUser(id) { if(confirm("Gỡ bỏ quyền truy cập của nhân sự này?")) { await supabaseClient.from('user_permissions').delete().eq('id', id); loadUsers(); } }
-        
-        async function loadLocs() {
-            const { data } = await supabaseClient.from('locations').select('*');
-            document.getElementById('loc-list').innerHTML = data.map(l => `
-                <div class="flex justify-between items-center p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                    <span class="text-[10px] font-black italic uppercase text-slate-700">${l.name}</span>
-                    <button onclick="delLoc('${l.id}')" class="text-slate-300 hover:text-red-500 transition-all">✕</button>
-                </div>`).join('');
+        function resetForm() {
+            document.getElementById('add-email').value = '';
+            document.getElementById('add-name').value = '';
+            document.querySelectorAll('.role-checkbox').forEach(cb => cb.checked = false);
         }
-        async function addLoc() { 
-            const name = document.getElementById('new-loc').value;
-            if(!name) return;
-            await supabaseClient.from('locations').insert([{name, is_active:true}]);
-            document.getElementById('new-loc').value=''; loadLocs();
+
+        async function removeUser(id) {
+            if(confirm("Xóa vĩnh viễn quyền truy cập của nhân sự này?")) {
+                await supabaseClient.from('user_permissions').delete().eq('id', id);
+                loadUsers();
+            }
         }
-        async function delLoc(id) { if(confirm("Xóa cơ sở này?")) { await supabaseClient.from('locations').delete().eq('id', id); loadLocs(); } }
 
         window.onload = init;
     </script>
