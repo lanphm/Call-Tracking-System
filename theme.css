@@ -1,0 +1,52 @@
+/* theme.css - File giao diện tập trung của Strategic Hub */
+
+:root {
+    /* Sau này muốn đổi giao diện, chỉ cần sửa các mã màu tại đây */
+    --primary-color: #007AFF;    /* Màu chủ đạo (đang là Blue iOS) */
+    --bg-system: #F2F2F7;        /* Màu nền hệ thống */
+    --bg-card: #FFFFFF;          /* Màu nền các khối nội dung */
+    --text-main: #1D1D1F;        /* Màu chữ chính */
+    --text-secondary: #8E8E93;   /* Màu chữ phụ */
+    --radius-card: 28px;         /* Độ bo góc của Card */
+    --radius-button: 14px;       /* Độ bo góc của Nút */
+}
+
+body {
+    background-color: var(--bg-system) !important;
+    color: var(--text-main) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    margin: 0;
+}
+
+/* Biến các Banner cũ (bg-slate-900) thành Header kính mờ chuyên nghiệp */
+div[class*="bg-slate-900"] {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: saturate(180%) blur(20px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    color: var(--text-main) !important;
+}
+
+/* Đồng bộ các nút bấm */
+button, .bg-blue-600, #btn-submit {
+    background-color: var(--primary-color) !important;
+    border-radius: var(--radius-button) !important;
+    font-weight: 600 !important;
+    color: white !important;
+    transition: all 0.2s ease;
+}
+
+/* Các khối nội dung (Card) */
+.bg-white {
+    background-color: var(--bg-card) !important;
+    border-radius: var(--radius-card) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03) !important;
+    border: none !important;
+}
+
+/* Ô nhập liệu */
+input, select, textarea, .bg-slate-50 {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    border-radius: 12px !important;
+    border: none !important;
+}
