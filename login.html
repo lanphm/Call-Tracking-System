@@ -39,13 +39,16 @@
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-        async function loginWithGoogle() {
-            const { error } = await supabaseClient.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.origin + '/index.html' }
-            });
-            if (error) alert("Lỗi đăng nhập: " + error.message);
+async function signInWithGoogle() {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            // window.location.origin: lấy https://lanphm.github.io hoặc vercel.app
+            // window.location.pathname: lấy /Call-Tracking-System/ hoặc /
+            redirectTo: window.location.origin + window.location.pathname
         }
+    });
+}
     </script>
 </body>
 </html>
