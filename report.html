@@ -5,20 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CMS Report</title>
     <link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CallMS">
-<link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/headset.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CallMS">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/headset.png">
 
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('PWA Ready'))
-        .catch(err => console.log('PWA Error', err));
-    });
-  }
-</script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('PWA Ready'))
+            .catch(err => console.log('PWA Error', err));
+        });
+      }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -67,7 +67,7 @@
             </div>
 
             <div class="lg:col-span-3 bg-white rounded-[30px] shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-4 bg-slate-100 font-black italic uppercase text-[9px] text-slate-600">Lịch sử</div>
+                <div class="p-4 bg-slate-100 font-black italic uppercase text-[9px] text-slate-600">Thông tin chi tiết lịch sử</div>
                 <div class="overflow-x-auto"><table class="w-full text-left text-xs min-w-[350px]">
                     <thead class="bg-slate-50 border-b"><tr><th class="p-3" id="time-header">Thời gian</th><th class="p-3 text-center">Call</th><th class="p-3 text-center text-blue-600">S.C</th><th class="p-3 text-center text-red-500">Hot</th></tr></thead>
                     <tbody id="pivot-time-body"></tbody>
