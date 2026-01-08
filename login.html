@@ -5,20 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - ACC CMS Hub</title>
     <link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CallMS">
-<link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/headset.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CallMS">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/headset.png">
 
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('PWA Ready'))
-        .catch(err => console.log('PWA Error', err));
-    });
-  }
-</script>
+    <script>
+      
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('PWA Ready'))
+            .catch(err => console.log('PWA Error', err));
+        });
+      }
+      
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="./config.js"></script>
@@ -28,7 +31,7 @@
         <h1 class="text-3xl font-black italic uppercase tracking-tighter text-slate-900">Strategic Hub</h1>
         <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2 mb-8">Hệ thống quản trị nội bộ</p>
         
-        <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-slate-900 text-white p-4 rounded-2xl font-black uppercase italic hover:bg-slate-800 transition-all">
+        <button onclick="signInWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-slate-900 text-white p-4 rounded-2xl font-black uppercase italic hover:bg-slate-800 transition-all">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
             Đăng nhập với Google
         </button>
@@ -37,19 +40,29 @@
     </div>
 
     <script>
+        // Khởi tạo Supabase Client
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-async function signInWithGoogle() {
-    const targetUrl = window.location.origin + window.location.pathname;
-    alert("Đang yêu cầu quay về: " + targetUrl); // Thêm dòng này để kiểm tra
+        async function signInWithGoogle() {
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        // redirectTo dùng window.location.origin sẽ tự khớp với Vercel hoặc Localhost
+                        redirectTo: window.location.origin + '/index.html', 
+                        queryParams: {
+                            access_type: 'offline',
+                            prompt: 'consent',
+                        },
+                    },
+                });
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: targetUrl
+                if (error) throw error;
+            } catch (error) {
+                console.error('Lỗi đăng nhập:', error.message);
+                alert('Có lỗi xảy ra: ' + error.message);
+            }
         }
-    });
-}
     </script>
 </body>
 </html>
