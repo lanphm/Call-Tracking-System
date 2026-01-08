@@ -40,12 +40,13 @@
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 async function signInWithGoogle() {
+    const targetUrl = window.location.origin + window.location.pathname;
+    alert("Đang yêu cầu quay về: " + targetUrl); // Thêm dòng này để kiểm tra
+
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            // window.location.origin: lấy https://lanphm.github.io hoặc vercel.app
-            // window.location.pathname: lấy /Call-Tracking-System/ hoặc /
-            redirectTo: window.location.origin + window.location.pathname
+            redirectTo: targetUrl
         }
     });
 }
