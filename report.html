@@ -11,7 +11,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
-        .sticky-column { position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #f1f5f9; }
+        .sticky-column { position: sticky; left: 0; background: white; z-index: 20; border-right: 2px solid #f1f5f9; }
         .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .rate-good { background-color: #dcfce7 !important; color: #166534 !important; }
         .rate-mid { background-color: #fef9c3 !important; color: #854d0e !important; }
@@ -39,7 +39,7 @@
                     <select id="filter_month" onchange="updateWeekOptions()" class="bg-slate-50 border-none p-3 rounded-xl text-xs font-bold outline-none text-slate-600 flex-1"></select>
                 </div>
                 <select id="filter_week" class="bg-slate-50 border-none p-3 rounded-xl text-xs font-bold outline-none text-slate-600 sm:min-w-[220px]"></select>
-                <button onclick="loadDataByFilter()" class="bg-blue-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase italic hover:bg-black transition-all shadow-lg">Xem Báo Cáo</button>
+                <button onclick="loadDataByFilter()" class="bg-blue-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase italic hover:bg-black transition-all shadow-lg">Lọc báo cáo</button>
             </div>
             <div class="flex flex-wrap gap-3 items-center bg-white/50 px-4 py-2 rounded-2xl text-[9px] font-bold uppercase tracking-wider border border-slate-100 shadow-sm">
                 <span class="text-slate-400 italic font-black">Chỉ số:</span>
@@ -51,19 +51,19 @@
 
         <div class="grid lg:grid-cols-2 gap-4 sm:gap-6">
             <div class="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm">
-                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 italic tracking-widest">Trend: Bookings vs Attendants</h3>
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 italic tracking-widest">Trend Analysis</h3>
                 <div class="h-[250px]"><canvas id="trendChart"></canvas></div>
             </div>
             <div class="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm">
-                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 italic tracking-widest">Staff Performance Overview</h3>
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 italic tracking-widest">Top 5 Staff Performance</h3>
                 <div class="h-[250px]"><canvas id="efficiencyChart"></canvas></div>
             </div>
         </div>
 
         <div class="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
             <div class="p-5 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center flex-wrap gap-2">
-                <h2 class="text-[10px] font-black uppercase italic tracking-widest text-slate-400">Unit Performance Overview</h2>
-                <div id="unit-header-stats" class="text-[10px] font-black text-blue-900 italic flex gap-4"></div>
+                <h2 class="text-[10px] font-black uppercase italic tracking-widest text-slate-400 text-blue-900">Unit Performance Overview</h2>
+                <div id="unit-header-stats" class="text-[10px] font-black italic flex gap-4"></div>
             </div>
             <div class="table-container">
                 <table id="unitTable" class="w-full text-left text-[11px] whitespace-nowrap"></table>
@@ -71,8 +71,9 @@
         </div>
 
         <div class="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden pb-4">
-            <div class="p-5 border-b border-slate-50 bg-slate-50/50">
-                <h2 class="text-[10px] font-black uppercase italic tracking-widest text-slate-400">Detailed Staff Efficiency</h2>
+            <div class="p-5 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+                <h2 class="text-[10px] font-black uppercase italic tracking-widest text-slate-400">Staff Contribution Detail</h2>
+                <span class="text-[8px] font-bold text-slate-300 uppercase">Swipe left ↔️</span>
             </div>
             <div class="table-container">
                 <table id="staffTable" class="w-full text-left text-[10px] whitespace-nowrap border-collapse"></table>
@@ -131,13 +132,15 @@
         }
 
         function getRateClass(val, type) {
-            if (type === 'conv') return val > 15 ? 'rate-good' : (val > 7 ? 'rate-mid' : 'rate-bad');
-            if (type === 'show') return val > 80 ? 'rate-good' : (val > 50 ? 'rate-mid' : 'rate-bad');
+            const v = parseFloat(val);
+            if (isNaN(v)) return '';
+            if (type === 'conv') return v > 15 ? 'rate-good' : (v > 7 ? 'rate-mid' : 'rate-bad');
+            if (type === 'show') return v > 80 ? 'rate-good' : (v > 50 ? 'rate-mid' : 'rate-bad');
             return '';
         }
 
         function processAndRender() {
-            let unitPivot = {}, staffPivot = {}, dailyTrend = {}, tC = 0, tS = 0, tB = 0;
+            let unitPivot = {}, staffPivot = {}, dailyTrend = {}, tC = 0, tS = 0, tB = 0, tA = 0;
 
             fullData.forEach(r => {
                 const d = r.report_date;
@@ -160,35 +163,44 @@
                         if (!staffPivot[name].loc[ln]) staffPivot[name].loc[ln] = 0;
                         staffPivot[name].loc[ln] += bc; staffPivot[name].b += bc; staffPivot[name].a += ac;
                         dailyTrend[d].b += bc; dailyTrend[d].a += ac;
-                        tB += bc;
+                        tB += bc; tA += ac;
                     });
                 }
             });
 
             document.getElementById('unit-header-stats').innerHTML = `
-                <span>CALL: ${tC.toLocaleString()}</span>
-                <span>SUCCESS: ${tS.toLocaleString()}</span>
-                <span class="text-emerald-600 font-black">CONV: ${((tB/(tC||1))*100).toFixed(1)}%</span>
+                <span class="text-slate-400">CALL: <b class="text-slate-900">${tC.toLocaleString()}</b></span>
+                <span class="text-slate-400">SUCCESS: <b class="text-blue-900">${tS.toLocaleString()}</b></span>
+                <span class="text-emerald-600 font-black underline italic">CONV: ${((tB/(tC||1))*100).toFixed(1)}%</span>
             `;
             renderCharts(dailyTrend, staffPivot);
-            renderUnitTable(unitPivot, tS, tC);
+            renderUnitTable(unitPivot, tB, tA, tC);
             renderStaffTable(staffPivot);
         }
 
-        function renderUnitTable(pivot, s, c) {
+        function renderUnitTable(pivot, tB, tA, tC) {
             const units = Object.keys(pivot).sort();
-            let h = `<thead class="bg-slate-50 border-b"><tr><th class="p-4 font-black text-slate-400 uppercase italic">Metric</th>
-                ${units.map(u => `<th class="p-4 text-center text-blue-900 font-black uppercase border-l italic">${u}</th>`).join('')}</tr></thead><tbody>`;
+            let h = `<thead class="bg-slate-50 border-b"><tr>
+                <th class="p-4 sticky-column font-black text-slate-400 uppercase italic">Metric</th>
+                <th class="p-4 text-center text-blue-900 font-black uppercase border-l italic bg-blue-50/50">Toàn Hệ Thống</th>
+                ${units.map(u => `<th class="p-4 text-center text-slate-600 font-black uppercase border-l italic">${u}</th>`).join('')}
+            </tr></thead><tbody>`;
             
             const rows = [
-                { l: 'Booking (Số Hẹn)', d: units.map(u => pivot[u].b), cls: 'bg-blue-50/20 font-bold' },
-                { l: 'Attendant (Khách Đến)', d: units.map(u => pivot[u].a), cls: 'bg-emerald-50/20 font-bold' },
-                { l: 'Show-up Rate %', d: units.map(u => ((pivot[u].a/(pivot[u].b||1))*100).toFixed(0) + '%'), type: 'show' }
+                { l: 'Booking (Số Hẹn)', total: tB, d: units.map(u => pivot[u].b), cls: 'bg-indigo-50/20 font-bold' },
+                { l: 'Conversion Rate %', total: ((tB/(tC||1))*100).toFixed(1) + '%', d: units.map(u => '-'), type: 'conv' },
+                { l: 'Attendant (Khách Đến)', total: tA, d: units.map(u => pivot[u].a), cls: 'bg-emerald-50/20 font-bold' },
+                { l: 'Show-up Rate %', total: ((tA/(tB||1))*100).toFixed(0) + '%', d: units.map(u => ((pivot[u].a/(pivot[u].b||1))*100).toFixed(0) + '%'), type: 'show' }
             ];
 
             rows.forEach(r => {
-                h += `<tr class="border-b ${r.cls||''}"><td class="p-4 font-bold text-slate-500 bg-slate-50/30">${r.l}</td>`;
-                r.d.forEach(v => { h += `<td class="p-4 text-center font-black border-l ${r.type?getRateClass(parseFloat(v),r.type):''}">${v}</td>`; });
+                h += `<tr class="border-b ${r.cls||''}">
+                    <td class="p-4 sticky-column font-bold text-slate-500 bg-slate-50/30 whitespace-nowrap">${r.l}</td>
+                    <td class="p-4 text-center font-black border-l bg-blue-50/30 ${r.type?getRateClass(r.total, r.type):''}">${r.total}</td>`;
+                r.d.forEach(v => { 
+                    const rateCls = (r.type && v !== '-') ? getRateClass(v, r.type) : '';
+                    h += `<td class="p-4 text-center font-black border-l ${rateCls}">${v}</td>`; 
+                });
                 h += `</tr>`;
             });
             document.getElementById('unitTable').innerHTML = h + '</tbody>';
@@ -205,8 +217,8 @@
                 <th class="p-4 text-center font-black uppercase italic text-orange-600 border-l">H/W</th>
                 ${locs.map(l => `<th class="p-4 text-center font-black uppercase italic text-slate-400 border-l">${l}</th>`).join('')}
                 <th class="p-4 text-center font-black uppercase italic text-indigo-600 border-l bg-indigo-50/30">Hẹn</th>
-                <th class="p-4 text-center font-black uppercase italic text-emerald-600 border-l relative group cursor-help">Conv%<span class="hidden group-hover:block absolute bottom-full mb-1 left-[-40px] bg-black text-white p-2 rounded text-[8px] normal-case w-24">Hẹn/T.Call</span></th>
-                <th class="p-4 text-center font-black uppercase italic text-rose-600 border-l relative group cursor-help">Show%<span class="hidden group-hover:block absolute bottom-full mb-1 left-[-40px] bg-black text-white p-2 rounded text-[8px] normal-case w-24">Đến/Hẹn</span></th></tr></thead><tbody>`;
+                <th class="p-4 text-center font-black uppercase italic text-emerald-600 border-l relative group cursor-help">Conv%</th>
+                <th class="p-4 text-center font-black uppercase italic text-rose-600 border-l relative group cursor-help">Show%</th></tr></thead><tbody>`;
 
             sorted.forEach(([n, v]) => {
                 const cR = (v.b/(v.t||1))*100, sR = (v.a/(v.b||1))*100;
@@ -230,20 +242,20 @@
             trendChart = new Chart(document.getElementById('trendChart'), {
                 type: 'line',
                 data: { labels, datasets: [
-                    { label: 'Hẹn', data: labels.map(l => trend[l].b), borderColor: '#1e40af', tension: 0.4, borderWidth: 3 },
-                    { label: 'Đến', data: labels.map(l => trend[l].a), borderColor: '#10b981', tension: 0.4, borderWidth: 3 }
+                    { label: 'Booking', data: labels.map(l => trend[l].b), borderColor: '#1e40af', tension: 0.4, borderWidth: 3 },
+                    { label: 'Attendant', data: labels.map(l => trend[l].a), borderColor: '#10b981', tension: 0.4, borderWidth: 3 }
                 ]},
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                options: { responsive: true, maintainAspectRatio: false }
             });
 
             const topStaff = Object.entries(staff).sort((a,b) => b[1].b - a[1].b).slice(0, 5);
             efficiencyChart = new Chart(document.getElementById('efficiencyChart'), {
                 type: 'bar',
                 data: { labels: topStaff.map(x => x[0]), datasets: [
-                    { label: 'Booking', data: topStaff.map(x => x[1].b), backgroundColor: '#1e40af' },
-                    { label: 'Show-up', data: topStaff.map(x => x[1].a), backgroundColor: '#10b981' }
+                    { label: 'Bookings', data: topStaff.map(x => x[1].b), backgroundColor: '#1e40af' },
+                    { label: 'Attendants', data: topStaff.map(x => x[1].a), backgroundColor: '#10b981' }
                 ]},
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
