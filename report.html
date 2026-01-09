@@ -124,41 +124,67 @@
             select.value = cur;
         }
 
-        function renderAll() {
-            const selectedStaff = document.getElementById('staff-filter').value;
-            const filtered = selectedStaff === 'all' ? fullData : fullData.filter(r => r.employee_email === selectedStaff);
-            let gC=0, gS=0, gB=0, gA=0;
-            const unitPivot = {}, staffPivot = {}, timePivot = {};
+function renderAll(filtered) {
+    // 1. Khởi tạo lại các biến tích lũy
+    let gC = 0, gS = 0, gH = 0, gW = 0, gB = 0, gA = 0;
+    let unitPivot = {};
+    let staffPivot = {};
 
-filtered.forEach(r => {
-    const name = r.user_permissions?.full_name || r.employee_email;
-    if(!staffPivot[name]) staffPivot[name] = {s:0, b:0, h:0, w:0, a:0, t:0, locBreakdown: {}}; 
-    
-    staffPivot[name].t += r.total_calls || 0;
-    staffPivot[name].s += r.successful_calls || 0; 
-    staffPivot[name].h += r.hot_leads || 0;
-    staffPivot[name].w += r.warm_leads || 0;
+    filtered.forEach(r => {
+        // Cộng dồn tổng toàn hệ thống
+        gC += parseInt(r.total_calls) || 0;
+        gS += parseInt(r.successful_calls) || 0;
+        gH += parseInt(r.hot_leads) || 0;
+        gW += parseInt(r.warm_leads) || 0;
 
-    if(r.report_details) {
-        r.report_details.forEach(d => {
-            const loc = d.locations?.name || 'N/A';
-            if(!staffPivot[name].locBreakdown[loc]) staffPivot[name].locBreakdown[loc] = 0;
-            
-            const booked = d.booked_count || 0;
-            const attended = d.attended_count || 0;
-            
-            staffPivot[name].locBreakdown[loc] += booked;
-            staffPivot[name].b += booked;
-            staffPivot[name].a += attended; // Gom tổng khách đến của nhân viên này
-        });
-    }
-});
-            renderBadges(gC, gS, gB, gA);
-            renderUnitTable(unitPivot, gC, gS);
-            renderStaffTable(staffPivot);
-            updateOverviewChart(timePivot);
+        // Xử lý dữ liệu Nhân viên
+        const name = r.user_permissions?.full_name || r.employee_email;
+        if (!staffPivot[name]) {
+            staffPivot[name] = { s: 0, b: 0, h: 0, w: 0, a: 0, t: 0, locBreakdown: {} };
         }
+        staffPivot[name].t += parseInt(r.total_calls) || 0;
+        staffPivot[name].s += parseInt(r.successful_calls) || 0;
+        staffPivot[name].h += parseInt(r.hot_leads) || 0;
+        staffPivot[name].w += parseInt(r.warm_leads) || 0;
 
+        // Xử lý dữ liệu chi tiết (Cho cả Đơn vị và Nhân viên)
+        if (r.report_details && Array.isArray(r.report_details)) {
+            r.report_details.forEach(d => {
+                const locName = d.locations?.name || "N/A";
+                const bCount = parseInt(d.booked_count) || 0;
+                const aCount = parseInt(d.attended_count) || 0;
+
+                // Đẩy vào Unit Pivot (Cho bảng Đơn vị)
+                if (!unitPivot[locName]) {
+                    unitPivot[locName] = { b: 0, a: 0 };
+                }
+                unitPivot[locName].b += bCount;
+                unitPivot[locName].a += aCount;
+                
+                // Cộng dồn tổng Booking/Attended hệ thống
+                gB += bCount;
+                gA += aCount;
+
+                // Đẩy vào Staff Pivot (Cho bảng Nhân viên)
+                if (!staffPivot[name].locBreakdown[locName]) {
+                    staffPivot[name].locBreakdown[locName] = 0;
+                }
+                staffPivot[name].locBreakdown[locName] += bCount;
+                staffPivot[name].b += bCount;
+                staffPivot[name].a += aCount;
+            });
+        }
+    });
+
+    // 2. Cập nhật các con số Header (Các ô tròn/vuông ở trên cùng)
+    // Giả sử bạn có các ID tương ứng, nếu không hãy bỏ qua đoạn này
+    if(document.getElementById('total-calls')) document.getElementById('total-calls').innerText = gC.toLocaleString();
+    if(document.getElementById('total-success')) document.getElementById('total-success').innerText = gS.toLocaleString();
+
+    // 3. Render 2 bảng
+    renderUnitTable(unitPivot, gC, gS); // Bảng đơn vị sẽ nhận unitPivot đã được xử lý ở trên
+    renderStaffTable(staffPivot);      // Bảng nhân viên nhận staffPivot
+}
         function renderBadges(c, s, b, a) {
             document.getElementById('summary-badges').innerHTML = `
                 <div class="bg-blue-900 p-4 rounded-[28px] text-white"><p class="text-[9px] font-black opacity-50 uppercase italic">Tổng Call</p><p class="text-xl font-black italic">${c}</p></div>
