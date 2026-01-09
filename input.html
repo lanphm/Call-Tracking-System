@@ -10,14 +10,17 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="p-4 bg-slate-50">
     <div class="max-w-2xl mx-auto space-y-6">
+        
         <div class="flex justify-between items-center bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
             <div>
                 <h1 class="text-xl font-black italic uppercase tracking-tighter text-slate-900">Data Entry</h1>
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Daily Performance Report</p>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Daily Performance Sync</p>
             </div>
             <button onclick="location.href='index.html'" class="bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl transition-all text-slate-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -25,69 +28,160 @@
         </div>
 
         <div class="bg-white p-8 rounded-[40px] shadow-sm border border-slate-100">
-            <input type="date" id="report_date" class="w-full bg-slate-50 border-none p-4 rounded-2xl font-bold mb-6 outline-none text-slate-900">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2 mb-2 block italic">Chọn ngày báo cáo:</label>
+            <input type="date" id="report_date" onchange="checkExistingData()" class="w-full bg-slate-100 border-none p-4 rounded-2xl font-black mb-6 outline-none text-blue-900 text-lg focus:ring-2 focus:ring-blue-500">
             
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <input type="number" id="total_calls" placeholder="Total Calls" class="bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold outline-none">
-                <input type="number" id="successful_calls" placeholder="Success" class="bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold outline-none">
+            <div id="status-msg" class="hidden text-[10px] font-bold text-orange-500 mb-6 px-4 py-2 bg-orange-50 rounded-xl uppercase italic border border-orange-100 italic">
+                ⚠️ Phát hiện dữ liệu cũ. Bạn đang ở chế độ chỉnh sửa.
             </div>
-            <input type="number" id="hot_leads" placeholder="Hot Leads Count" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold outline-none mb-6">
-            
-            <div id="location-container" class="space-y-4 pt-4 border-t border-dashed border-slate-200"></div>
 
-            <button onclick="submitReport()" id="btn-submit" class="w-full mt-8 bg-blue-900 text-white p-5 rounded-[28px] font-black uppercase italic shadow-xl">Gửi báo cáo</button>
+            <div class="space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Total Calls</label>
+                        <input type="number" id="total_calls" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold outline-none focus:bg-white focus:ring-1 focus:ring-slate-200">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Success Calls</label>
+                        <input type="number" id="successful_calls" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold outline-none focus:bg-white focus:ring-1 focus:ring-slate-200">
+                    </div>
+                </div>
+                
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Hot Leads</label>
+                    <input type="number" id="hot_leads" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold outline-none focus:bg-white focus:ring-1 focus:ring-slate-200">
+                </div>
+                
+                <div id="location-container" class="space-y-6 pt-6 border-t border-dashed border-slate-200">
+                    </div>
+            </div>
+
+            <button onclick="submitReport()" id="btn-submit" class="w-full mt-10 bg-blue-900 text-white p-5 rounded-[28px] font-black uppercase italic shadow-xl hover:bg-black transition-all active:scale-95">Lưu báo cáo ngày</button>
         </div>
     </div>
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-        document.getElementById('report_date').valueAsDate = new Date();
+        let locationsData = [];
+        let existingReportId = null;
+
+        // Khởi tạo: Load chi nhánh và kiểm tra dữ liệu ngày hôm nay
+        async function init() {
+            document.getElementById('report_date').valueAsDate = new Date();
+            await loadLocations();
+            await checkExistingData();
+        }
 
         async function loadLocations() {
-            const { data } = await supabaseClient.from('locations').select('*').eq('is_active', true);
+            const { data } = await supabaseClient.from('locations').select('*').eq('is_active', true).order('name');
             if (data) {
-                document.getElementById('location-container').innerHTML = data.map(loc => `
-                    <div class="location-item" data-id="${loc.id}">
-                        <p class="text-[10px] font-black uppercase text-blue-900 mb-2 italic">${loc.name}</p>
-                        <div class="grid grid-cols-2 gap-3">
-                            <input type="number" class="booked bg-slate-100 border-none p-3 rounded-xl text-xs font-bold" placeholder="Booked">
-                            <input type="number" class="attended bg-slate-100 border-none p-3 rounded-xl text-xs font-bold" placeholder="Attendants">
-                        </div>
-                    </div>`).join('');
+                locationsData = data;
+                renderLocationInputs();
             }
+        }
+
+        function renderLocationInputs() {
+            document.getElementById('location-container').innerHTML = locationsData.map(loc => `
+                <div class="location-item p-4 bg-slate-50/50 rounded-[24px] border border-slate-50" data-id="${loc.id}">
+                    <p class="text-[10px] font-black uppercase text-blue-900 mb-3 italic tracking-tight underline decoration-blue-200 underline-offset-4">${loc.name}</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase ml-1">Booked</span>
+                            <input type="number" class="booked w-full bg-white border-none p-3 rounded-xl text-xs font-black outline-none shadow-sm" placeholder="0">
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase ml-1">Attended</span>
+                            <input type="number" class="attended w-full bg-white border-none p-3 rounded-xl text-xs font-black outline-none shadow-sm" placeholder="0">
+                        </div>
+                    </div>
+                </div>`).join('');
+        }
+
+        // LOGIC QUAN TRỌNG: Kiểm tra dữ liệu cũ khi đổi ngày
+        async function checkExistingData() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            const date = document.getElementById('report_date').value;
+            if (!date) return;
+
+            resetForm();
+
+            const { data: report } = await supabaseClient.from('daily_reports')
+                .select(`*, report_details(*)`)
+                .eq('report_date', date)
+                .eq('employee_email', user.email)
+                .maybeSingle();
+
+            if (report) {
+                existingReportId = report.id;
+                document.getElementById('status-msg').classList.remove('hidden');
+                document.getElementById('total_calls').value = report.total_calls;
+                document.getElementById('successful_calls').value = report.successful_calls;
+                document.getElementById('hot_leads').value = report.hot_leads;
+
+                report.report_details.forEach(detail => {
+                    const row = document.querySelector(`.location-item[data-id="${detail.location_id}"]`);
+                    if (row) {
+                        row.querySelector('.booked').value = detail.booked_count;
+                        row.querySelector('.attended').value = detail.attended_count;
+                    }
+                });
+            } else {
+                existingReportId = null;
+                document.getElementById('status-msg').classList.add('hidden');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('total_calls').value = '';
+            document.getElementById('successful_calls').value = '';
+            document.getElementById('hot_leads').value = '';
+            document.querySelectorAll('.booked, .attended').forEach(input => input.value = '');
         }
 
         async function submitReport() {
             const { data: { user } } = await supabaseClient.auth.getUser();
+            const date = document.getElementById('report_date').value;
             const btn = document.getElementById('btn-submit');
-            btn.disabled = true; btn.innerText = "Đang gửi...";
+            
+            btn.disabled = true; btn.innerText = "Đang xử lý...";
 
             const mainData = {
                 employee_email: user.email,
-                report_date: document.getElementById('report_date').value,
+                report_date: date,
                 total_calls: parseInt(document.getElementById('total_calls').value) || 0,
                 successful_calls: parseInt(document.getElementById('successful_calls').value) || 0,
                 hot_leads: parseInt(document.getElementById('hot_leads').value) || 0
             };
 
-            const { data: report, error: rErr } = await supabaseClient.from('daily_reports').insert([mainData]).select();
-            
-            if (report) {
+            try {
+                let reportId = existingReportId;
+
+                if (existingReportId) {
+                    await supabaseClient.from('daily_reports').update(mainData).eq('id', existingReportId);
+                    await supabaseClient.from('report_details').delete().eq('report_id', existingReportId);
+                } else {
+                    const { data: newReport } = await supabaseClient.from('daily_reports').insert([mainData]).select().single();
+                    reportId = newReport.id;
+                }
+
                 const details = Array.from(document.querySelectorAll('.location-item')).map(div => ({
-                    report_id: report[0].id,
+                    report_id: reportId,
                     location_id: div.dataset.id,
                     booked_count: parseInt(div.querySelector('.booked').value) || 0,
                     attended_count: parseInt(div.querySelector('.attended').value) || 0
                 }));
+
                 await supabaseClient.from('report_details').insert(details);
-                alert("Báo cáo đã được gửi!");
-                location.reload();
-            } else {
-                alert("Lỗi: " + rErr.message);
-                btn.disabled = false; btn.innerText = "Gửi báo cáo";
+                alert("Dữ liệu đã được lưu thành công!");
+                await checkExistingData();
+            } catch (err) {
+                alert("Lỗi hệ thống: " + err.message);
+            } finally {
+                btn.disabled = false; btn.innerText = "Lưu báo cáo ngày";
             }
         }
-        loadLocations();
+
+        init();
     </script>
 </body>
 </html>
