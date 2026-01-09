@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Strategic Hub - System Admin</title>
+    <title>System Admin - Strategic Hub</title>
     <script src="./config.js?v=refresh"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,12 +14,12 @@
 </head>
 <body class="p-4 sm:p-8">
     <div class="max-w-4xl mx-auto space-y-8">
-        <div class="flex justify-between items-center bg-slate-900 p-6 rounded-[32px] text-white shadow-xl">
+        <div class="flex justify-between items-center bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
             <div>
-                <h1 class="text-xl font-black italic uppercase tracking-tighter">System Admin</h1>
-                <p class="text-[9px] opacity-50 font-bold uppercase tracking-widest">User Access Control</p>
+                <h1 class="text-xl font-black italic uppercase tracking-tighter text-slate-900">System Admin</h1>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">User Access Control</p>
             </div>
-            <button onclick="location.href='index.html'" class="bg-white/10 hover:bg-white/20 p-3 rounded-2xl transition-all">
+            <button onclick="location.href='index.html'" class="bg-slate-100 hover:bg-slate-200 p-3 rounded-2xl transition-all text-slate-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
             </button>
         </div>
@@ -27,57 +27,45 @@
         <div class="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
             <h2 class="text-[10px] font-black uppercase text-slate-400 mb-6 italic tracking-widest">Thêm / Cập nhật nhân sự</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="email" id="new-user-email" placeholder="Email Google (Ví dụ: nhanvien@gmail.com)" class="bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="email" id="new-user-email" placeholder="Email Google" class="bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none">
                 <input type="text" id="new-user-name" placeholder="Họ và tên" class="bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
-            
             <div class="flex flex-wrap gap-4 mt-6 items-center">
-                <p class="text-[10px] font-black uppercase text-slate-400 italic">Quyền truy cập:</p>
-                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-4 py-2 rounded-xl">
-                    <input type="checkbox" name="role-box" value="staff" class="w-4 h-4 rounded border-none">
-                    <span class="text-[11px] font-black uppercase italic text-slate-600">Staff (Nhập liệu)</span>
+                <label class="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl cursor-pointer">
+                    <input type="checkbox" name="role-box" value="staff" class="w-4 h-4 rounded"> <span class="text-[11px] font-black uppercase italic text-slate-600">Staff</span>
                 </label>
-                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-4 py-2 rounded-xl">
-                    <input type="checkbox" name="role-box" value="viewer" class="w-4 h-4 rounded border-none">
-                    <span class="text-[11px] font-black uppercase italic text-slate-600">Viewer (Xem báo cáo)</span>
+                <label class="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl cursor-pointer">
+                    <input type="checkbox" name="role-box" value="viewer" class="w-4 h-4 rounded"> <span class="text-[11px] font-black uppercase italic text-slate-600">Viewer</span>
                 </label>
-                <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-4 py-2 rounded-xl">
-                    <input type="checkbox" name="role-box" value="admin" class="w-4 h-4 rounded border-none">
-                    <span class="text-[11px] font-black uppercase italic text-slate-600">Admin</span>
+                <label class="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl cursor-pointer">
+                    <input type="checkbox" name="role-box" value="admin" class="w-4 h-4 rounded"> <span class="text-[11px] font-black uppercase italic text-slate-600">Admin</span>
                 </label>
             </div>
-
-            <button onclick="addUser()" id="btn-add" class="w-full mt-6 bg-blue-900 text-white p-4 rounded-2xl font-black uppercase italic shadow-lg hover:scale-[1.02] active:scale-95 transition-all">Lưu thông tin nhân sự</button>
+            <button onclick="addUser()" id="btn-add" class="w-full mt-6 bg-blue-900 text-white p-4 rounded-2xl font-black uppercase italic shadow-lg hover:scale-[1.01] transition-all">Lưu nhân sự</button>
         </div>
 
-        <div class="space-y-3" id="user-list">
-            </div>
+        <div class="space-y-3" id="user-list"></div>
     </div>
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
         async function loadData() {
-            const { data: users, error } = await supabaseClient.from('user_permissions').select('*').order('full_name');
-            if (error) return console.error(error);
-            
-            const list = document.getElementById('user-list');
-            list.innerHTML = users.map(u => `
-                <div class="bg-white p-5 rounded-[28px] border border-slate-100 flex justify-between items-center shadow-sm">
-                    <div>
-                        <p class="text-sm font-black text-slate-900 italic uppercase tracking-tighter">${u.full_name}</p>
-                        <p class="text-[10px] font-bold text-slate-400">${u.email}</p>
-                        <div class="flex gap-1 mt-2">
-                            ${u.role.map(r => `<span class="bg-blue-50 text-blue-700 text-[8px] font-black px-2 py-0.5 rounded-full uppercase italic">${r}</span>`).join('')}
+            const { data: users } = await supabaseClient.from('user_permissions').select('*').order('full_name');
+            if (users) {
+                document.getElementById('user-list').innerHTML = users.map(u => `
+                    <div class="bg-white p-5 rounded-[28px] border border-slate-100 flex justify-between items-center shadow-sm">
+                        <div>
+                            <p class="text-sm font-black text-slate-900 italic uppercase tracking-tighter">${u.full_name}</p>
+                            <p class="text-[10px] font-bold text-slate-400">${u.email}</p>
+                            <div class="flex gap-1 mt-2">${u.role.map(r => `<span class="bg-blue-50 text-blue-700 text-[8px] font-black px-2 py-0.5 rounded-full uppercase italic">${r}</span>`).join('')}</div>
                         </div>
-                    </div>
-                    <div class="flex gap-4">
-                        <button onclick="editUser('${u.email}', '${u.full_name}', '${u.role.join(',')}')" class="text-blue-600 text-[10px] font-black uppercase italic hover:underline">Sửa</button>
-                        <button onclick="deleteUser('${u.email}')" class="text-red-400 text-[10px] font-black uppercase italic hover:underline">Xóa</button>
-                    </div>
-                </div>`).join('');
+                        <div class="flex gap-4">
+                            <button onclick="editUser('${u.email}', '${u.full_name}', '${u.role.join(',')}')" class="text-blue-600 text-[10px] font-black uppercase italic">Sửa</button>
+                            <button onclick="deleteUser('${u.email}')" class="text-red-400 text-[10px] font-black uppercase italic">Xóa</button>
+                        </div>
+                    </div>`).join('');
+            }
         }
-
         function editUser(email, name, roles) {
             document.getElementById('new-user-email').value = email;
             document.getElementById('new-user-name').value = name;
@@ -86,38 +74,17 @@
             document.getElementById('btn-add').innerText = "Cập nhật nhân sự";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
         async function addUser() {
             const email = document.getElementById('new-user-email').value;
             const full_name = document.getElementById('new-user-name').value;
-            const role = Array.from(document.querySelectorAll('input[name=\"role-box\"]:checked')).map(cb => cb.value);
-            
-            if(!email || !full_name || role.length === 0) return alert("Vui lòng nhập đầy đủ thông tin và chọn ít nhất 1 quyền.");
-            
-            const btn = document.getElementById('btn-add');
-            btn.disabled = true;
-            btn.innerText = "Đang xử lý...";
-
+            const role = Array.from(document.querySelectorAll('input[name="role-box"]:checked')).map(cb => cb.value);
+            if(!email || !full_name || role.length === 0) return alert("Vui lòng nhập đủ thông tin.");
             const { error } = await supabaseClient.from('user_permissions').upsert([{ email, full_name, role, is_active: true }], { onConflict: 'email' });
-            
-            if(!error) {
-                alert("Đã lưu thành công!");
-                location.reload();
-            } else {
-                alert("Lỗi: " + error.message);
-                btn.disabled = false;
-                btn.innerText = "Lưu thông tin nhân sự";
-            }
+            if(!error) { alert("Thành công!"); location.reload(); }
         }
-
         async function deleteUser(email) {
-            if(confirm('Bạn có chắc chắn muốn xóa nhân sự này không?')) {
-                const { error } = await supabaseClient.from('user_permissions').delete().eq('email', email);
-                if(!error) loadData();
-                else alert("Lỗi khi xóa: " + error.message);
-            }
+            if(confirm('Xóa nhân sự này?')) { await supabaseClient.from('user_permissions').delete().eq('email', email); loadData(); }
         }
-
         window.onload = loadData;
     </script>
 </body>
