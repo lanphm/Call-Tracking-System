@@ -130,27 +130,29 @@
             let gC=0, gS=0, gB=0, gA=0;
             const unitPivot = {}, staffPivot = {}, timePivot = {};
 
-            filtered.forEach(r => {
-                gC += r.total_calls || 0; gS += r.successful_calls || 0;
-                const tKey = r.report_date;
-                if(!timePivot[tKey]) timePivot[tKey] = {s: 0, b: 0};
-                timePivot[tKey].s += r.successful_calls || 0;
-                const name = r.user_permissions?.full_name || r.employee_email;
-                if(!staffPivot[name]) staffPivot[name] = {s:0, b:0, h:0};
-                staffPivot[name].s += r.successful_calls || 0; staffPivot[name].h += r.hot_leads || 0;
+filtered.forEach(r => {
+    const name = r.user_permissions?.full_name || r.employee_email;
+    if(!staffPivot[name]) staffPivot[name] = {s:0, b:0, h:0, w:0, a:0, t:0, locBreakdown: {}}; 
+    
+    staffPivot[name].t += r.total_calls || 0;
+    staffPivot[name].s += r.successful_calls || 0; 
+    staffPivot[name].h += r.hot_leads || 0;
+    staffPivot[name].w += r.warm_leads || 0;
 
-                if(r.report_details) {
-                    r.report_details.forEach(d => {
-                        const loc = d.locations?.name || 'N/A';
-                        if(!unitPivot[loc]) unitPivot[loc] = {b:0, a:0, h:0};
-                        unitPivot[loc].b += d.booked_count || 0; unitPivot[loc].a += d.attended_count || 0;
-                        unitPivot[loc].h += Math.round((r.hot_leads || 0) / r.report_details.length);
-                        gB += d.booked_count || 0; gA += d.attended_count || 0;
-                        timePivot[tKey].b += d.booked_count || 0;
-                        staffPivot[name].b += d.booked_count || 0;
-                    });
-                }
-            });
+    if(r.report_details) {
+        r.report_details.forEach(d => {
+            const loc = d.locations?.name || 'N/A';
+            if(!staffPivot[name].locBreakdown[loc]) staffPivot[name].locBreakdown[loc] = 0;
+            
+            const booked = d.booked_count || 0;
+            const attended = d.attended_count || 0;
+            
+            staffPivot[name].locBreakdown[loc] += booked;
+            staffPivot[name].b += booked;
+            staffPivot[name].a += attended; // Gom tổng khách đến của nhân viên này
+        });
+    }
+});
             renderBadges(gC, gS, gB, gA);
             renderUnitTable(unitPivot, gC, gS);
             renderStaffTable(staffPivot);
@@ -184,12 +186,50 @@
             document.getElementById('unit-performance-container').innerHTML = html;
         }
 
-        function renderStaffTable(staff) {
-            const sorted = Object.entries(staff).sort((a,b) => b[1].s - a[1].s);
-            document.getElementById('staff-ranking-body').innerHTML = sorted.map(([name, v]) => `
-                <tr class="border-b"><td class="p-3 font-bold text-slate-700">${name}</td><td class="p-3 text-center font-black text-blue-900">${v.s} S.C</td><td class="p-3 text-center font-bold text-emerald-600">${v.b} Book</td><td class="p-3 text-right"><span class="bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-black text-[9px] uppercase">${((v.h/(v.s||1))*100).toFixed(0)}% Hot</span></td></tr>`).join('');
-            window.lastStaffData = staff;
-        }
+function renderStaffTable(staff) {
+    const sorted = Object.entries(staff).sort((a,b) => b[1].s - a[1].s);
+    const locationNames = [...new Set(fullData.flatMap(r => r.report_details.map(d => d.locations?.name)))].filter(Boolean);
+
+    let html = `
+        <div class="overflow-x-auto hide-scrollbar">
+            <table class="w-full text-left border-collapse text-[10px]">
+                <thead class="bg-slate-50 border-b">
+                    <tr>
+                        <th class="p-3 font-black uppercase italic text-slate-400 min-w-[120px]">Nhân sự</th>
+                        <th class="p-3 text-center font-black uppercase italic text-blue-900">Success</th>
+                        <th class="p-3 text-center font-black uppercase italic text-orange-600">Hot / Warm</th>
+                        ${locationNames.map(loc => `<th class="p-3 text-center font-black uppercase italic text-slate-400">${loc}</th>`).join('')}
+                        <th class="p-3 text-center font-black uppercase italic text-indigo-600">Tổng Hẹn</th>
+                        <th class="p-3 text-center font-black uppercase italic text-emerald-600">Conv %</th>
+                        <th class="p-3 text-center font-black uppercase italic text-rose-600">Show-up %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sorted.map(([name, v]) => {
+                        const convRate = (v.b / (v.t || 1)) * 100;
+                        const showUpRate = (v.a / (v.b || 1)) * 100;
+                        return `
+                        <tr class="border-b hover:bg-slate-50 transition-colors">
+                            <td class="p-3 font-black text-slate-900 uppercase tracking-tighter">${name}</td>
+                            <td class="p-3 text-center font-black text-blue-700 bg-blue-50/30">${v.s}</td>
+                            <td class="p-3 text-center font-bold text-slate-700">
+                                <span class="text-rose-500">${v.h}</span> / <span class="text-orange-400">${v.w}</span>
+                            </td>
+                            ${locationNames.map(loc => {
+                                const count = v.locBreakdown[loc] || 0;
+                                return `<td class="p-3 text-center font-medium ${count > 0 ? 'text-slate-900' : 'text-slate-300'}">${count}</td>`;
+                            }).join('')}
+                            <td class="p-3 text-center font-black text-indigo-700 bg-indigo-50/30">${v.b}</td>
+                            <td class="p-3 text-center font-black text-emerald-600">${convRate.toFixed(1)}%</td>
+                            <td class="p-3 text-center font-black text-rose-600">${showUpRate.toFixed(0)}%</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>`;
+    
+    document.getElementById('staff-ranking-body').innerHTML = html;
+}
 
         function renderStaffChart() {
             const data = window.lastStaffData; if(!data) return;
