@@ -3,19 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Data Entry - Strategic Hub</title>
+    <title>Daily Input System - Strategic Hub</title>
+    
     <script src="./config.js?v=refresh"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        body { font-family: 'Inter', sans-serif; }
+        .fc { max-height: 450px; font-size: 0.8rem; background: white; padding: 10px; border-radius: 20px; border:none; }
+        .has-data { background-color: #3b82f6 !important; border: none !important; color: white !important; font-size: 9px; }
+        input::-webkit-inner-spin-button { display: none; }
+        .input-error { border: 2px solid #ef4444 !important; background-color: #fef2f2 !important; }
+        .btn-disabled { background-color: #94a3b8 !important; cursor: not-allowed; opacity: 0.7; }
     </style>
 </head>
-<body class="p-4 bg-slate-50">
-    <div class="max-w-2xl mx-auto space-y-6">
+<body class="bg-slate-50 text-slate-900 pb-10">
+    <div class="max-w-6xl mx-auto p-4 space-y-6">
         
         <div class="flex justify-between items-center bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
             <div>
@@ -27,161 +34,208 @@
             </button>
         </div>
 
-        <div class="bg-white p-8 rounded-[40px] shadow-sm border border-slate-100">
-            <label class="text-[10px] font-black uppercase text-slate-400 ml-2 mb-2 block italic">Chọn ngày báo cáo:</label>
-            <input type="date" id="report_date" onchange="checkExistingData()" class="w-full bg-slate-100 border-none p-4 rounded-2xl font-black mb-6 outline-none text-blue-900 text-lg focus:ring-2 focus:ring-blue-500">
-            
-            <div id="status-msg" class="hidden text-[10px] font-bold text-orange-500 mb-6 px-4 py-2 bg-orange-50 rounded-xl uppercase italic border border-orange-100 italic">
-                ⚠️ Phát hiện dữ liệu cũ. Bạn đang ở chế độ chỉnh sửa.
+        <div class="grid lg:grid-cols-5 gap-6">
+            <div class="lg:col-span-2 space-y-4">
+                <div class="bg-white p-4 rounded-[35px] shadow-sm border border-slate-200">
+                    <div id="calendar"></div>
+                </div>
             </div>
 
-            <div class="space-y-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Total Calls</label>
-                        <input type="number" id="total_calls" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold outline-none focus:bg-white focus:ring-1 focus:ring-slate-200">
+            <div class="lg:col-span-3 space-y-4">
+                <div class="bg-white p-8 rounded-[40px] shadow-sm border border-slate-200 space-y-6">
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <div>
+                            <span id="display-date" class="font-black text-2xl text-slate-900 italic uppercase">Chọn ngày</span>
+                            <input type="hidden" id="report_date">
+                        </div>
+                        <div id="calc-ratio" class="bg-blue-600 text-white text-[10px] px-4 py-2 rounded-full font-black italic transition-all">Ratio: 0%</div>
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Success Calls</label>
-                        <input type="number" id="successful_calls" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold outline-none focus:bg-white focus:ring-1 focus:ring-slate-200">
-                    </div>
-                </div>
-                
-                <div class="space-y-1">
-                    <label class="text-[10px] font-black uppercase text-slate-400 ml-2 italic">Hot Leads</label>
-                    <input type="number" id="hot_leads" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-sm font-bold outline-none focus:bg-white focus:ring-1 focus:ring-slate-200">
-                </div>
-                
-                <div id="location-container" class="space-y-6 pt-6 border-t border-dashed border-slate-200">
-                    </div>
-            </div>
 
-            <button onclick="submitReport()" id="btn-submit" class="w-full mt-10 bg-blue-900 text-white p-5 rounded-[28px] font-black uppercase italic shadow-xl hover:bg-black transition-all active:scale-95">Lưu báo cáo ngày</button>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-[25px]">
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="text-[8px] font-black uppercase text-slate-400 ml-1">Tổng Call</label>
+                            <input type="number" id="total_calls" oninput="validateLogic()" class="w-full bg-white p-3 rounded-xl border-none font-bold text-lg outline-none text-blue-600 shadow-sm">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="text-[8px] font-black uppercase text-green-500 ml-1">Thành công</label>
+                            <input type="number" id="successful_calls" oninput="validateLogic()" class="w-full bg-white p-3 rounded-xl border-none font-bold text-lg outline-none text-green-600 shadow-sm">
+                        </div>
+                        <div class="col-span-1">
+                            <label class="text-[8px] font-black uppercase text-slate-400 ml-1">Warm</label>
+                            <input type="number" id="warm_leads" oninput="validateLogic()" class="w-full bg-white p-3 rounded-xl border-none font-bold outline-none shadow-sm text-sm">
+                        </div>
+                        <div class="col-span-1">
+                            <label class="text-[8px] font-black uppercase text-red-500 ml-1">Hot</label>
+                            <input type="number" id="hot_leads" oninput="validateLogic()" class="w-full bg-white p-3 rounded-xl border-none font-bold outline-none shadow-sm text-red-500 text-sm">
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <p class="text-[9px] font-black text-amber-600 uppercase tracking-widest italic">● Chi tiết hẹn khách theo cơ sở</p>
+                            <div id="booking-total-text" class="text-[9px] font-bold text-slate-400 uppercase">Tổng hẹn: 0</div>
+                        </div>
+                        <div id="location-inputs" class="space-y-2"></div>
+                    </div>
+
+                    <div id="error-box" class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded-xl">
+                        <p id="error-message" class="text-xs text-red-700 font-bold italic"></p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="number" id="no_answer" placeholder="Ko nghe" class="bg-slate-50 p-3 rounded-xl border-none font-bold text-xs outline-none">
+                        <input type="number" id="wrong_number" placeholder="Sai số" class="bg-slate-50 p-3 rounded-xl border-none font-bold text-xs outline-none">
+                        <input type="number" id="follow_ups" placeholder="F-Ups" class="bg-slate-50 p-3 rounded-xl border-none font-bold text-xs outline-none text-amber-600">
+                    </div>
+                    <textarea id="remarks" rows="2" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-medium text-xs outline-none" placeholder="Ghi chú thêm..."></textarea>
+                    
+                    <button onclick="submitAll()" id="btn-submit" class="w-full bg-slate-900 text-white p-5 rounded-[25px] font-black uppercase italic shadow-2xl active:scale-95 transition-all">Xác nhận lưu báo cáo</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-        let locationsData = [];
-        let existingReportId = null;
+        let calendar;
+        let userEmail = "";
+        let locations = [];
+        const CALL_FIELDS = ['total_calls', 'successful_calls', 'warm_leads', 'hot_leads', 'no_answer', 'wrong_number', 'follow_ups', 'remarks'];
 
-        // Khởi tạo: Load chi nhánh và kiểm tra dữ liệu ngày hôm nay
-        async function init() {
-            document.getElementById('report_date').valueAsDate = new Date();
-            await loadLocations();
-            await checkExistingData();
-        }
+        function validateLogic() {
+            const t = parseInt(document.getElementById('total_calls').value) || 0;
+            const s = parseInt(document.getElementById('successful_calls').value) || 0;
+            const w = parseInt(document.getElementById('warm_leads').value) || 0;
+            const h = parseInt(document.getElementById('hot_leads').value) || 0;
+            let totalB = 0;
+            document.querySelectorAll('.booked-input').forEach(i => totalB += (parseInt(i.value) || 0));
+            const btn = document.getElementById('btn-submit');
+            const errorBox = document.getElementById('error-box');
+            const errorMsg = document.getElementById('error-message');
+            let errors = [];
 
-        async function loadLocations() {
-            const { data } = await supabaseClient.from('locations').select('*').eq('is_active', true).order('name');
-            if (data) {
-                locationsData = data;
-                renderLocationInputs();
+            document.getElementById('successful_calls').classList.remove('input-error');
+            document.getElementById('warm_leads').classList.remove('input-error');
+            document.getElementById('hot_leads').classList.remove('input-error');
+            document.querySelectorAll('.booked-input').forEach(i => i.classList.remove('input-error'));
+
+            if (s > t) {
+                errors.push("Số cuộc gọi 'Thành công' không thể lớn hơn 'Tổng cuộc gọi'.");
+                document.getElementById('successful_calls').classList.add('input-error');
             }
-        }
+            if ((w + h) > s) {
+                errors.push("Tổng số Warm và Hot Leads không thể lớn hơn số cuộc gọi Thành công.");
+                document.getElementById('warm_leads').classList.add('input-error');
+                document.getElementById('hot_leads').classList.add('input-error');
+            }
+            if (totalB > s) {
+                errors.push(`Tổng số hẹn các chi nhánh (${totalB}) đang vượt quá số cuộc gọi Thành công (${s}).`);
+                document.querySelectorAll('.booked-input').forEach(i => i.classList.add('input-error'));
+            }
 
-        function renderLocationInputs() {
-            document.getElementById('location-container').innerHTML = locationsData.map(loc => `
-                <div class="location-item p-4 bg-slate-50/50 rounded-[24px] border border-slate-50" data-id="${loc.id}">
-                    <p class="text-[10px] font-black uppercase text-blue-900 mb-3 italic tracking-tight underline decoration-blue-200 underline-offset-4">${loc.name}</p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-1">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase ml-1">Booked</span>
-                            <input type="number" class="booked w-full bg-white border-none p-3 rounded-xl text-xs font-black outline-none shadow-sm" placeholder="0">
-                        </div>
-                        <div class="space-y-1">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase ml-1">Attended</span>
-                            <input type="number" class="attended w-full bg-white border-none p-3 rounded-xl text-xs font-black outline-none shadow-sm" placeholder="0">
-                        </div>
-                    </div>
-                </div>`).join('');
-        }
-
-        // LOGIC QUAN TRỌNG: Kiểm tra dữ liệu cũ khi đổi ngày
-        async function checkExistingData() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            const date = document.getElementById('report_date').value;
-            if (!date) return;
-
-            resetForm();
-
-            const { data: report } = await supabaseClient.from('daily_reports')
-                .select(`*, report_details(*)`)
-                .eq('report_date', date)
-                .eq('employee_email', user.email)
-                .maybeSingle();
-
-            if (report) {
-                existingReportId = report.id;
-                document.getElementById('status-msg').classList.remove('hidden');
-                document.getElementById('total_calls').value = report.total_calls;
-                document.getElementById('successful_calls').value = report.successful_calls;
-                document.getElementById('hot_leads').value = report.hot_leads;
-
-                report.report_details.forEach(detail => {
-                    const row = document.querySelector(`.location-item[data-id="${detail.location_id}"]`);
-                    if (row) {
-                        row.querySelector('.booked').value = detail.booked_count;
-                        row.querySelector('.attended').value = detail.attended_count;
-                    }
-                });
+            if (errors.length > 0) {
+                errorBox.classList.remove('hidden');
+                errorMsg.innerHTML = errors.join("<br>");
+                btn.disabled = true; btn.classList.add('btn-disabled');
+                btn.innerText = "Dữ liệu không hợp lệ";
             } else {
-                existingReportId = null;
-                document.getElementById('status-msg').classList.add('hidden');
+                errorBox.classList.add('hidden');
+                btn.disabled = false; btn.classList.remove('btn-disabled');
+                btn.innerText = "Xác nhận lưu báo cáo";
             }
+            document.getElementById('calc-ratio').innerText = `Ratio: ${t > 0 ? ((s/t)*100).toFixed(0) : 0}%`;
+            document.getElementById('booking-total-text').innerText = `Tổng hẹn: ${totalB}`;
         }
 
-        function resetForm() {
-            document.getElementById('total_calls').value = '';
-            document.getElementById('successful_calls').value = '';
-            document.getElementById('hot_leads').value = '';
-            document.querySelectorAll('.booked, .attended').forEach(input => input.value = '');
+        async function initPage() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { location.href = 'login.html'; return; }
+            userEmail = session.user.email;
+            const { data: locs } = await supabaseClient.from('locations').select('*').eq('is_active', true).order('name');
+            locations = locs || [];
+            renderLocations();
+            initCalendar();
         }
 
-        async function submitReport() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
+        function renderLocations() {
+            const container = document.getElementById('location-inputs');
+            container.innerHTML = locations.map(l => `
+                <div class="grid grid-cols-12 gap-2 items-center bg-white border border-slate-100 p-2 rounded-2xl shadow-sm">
+                    <div class="col-span-5 text-[10px] font-black uppercase text-slate-600 pl-2 truncate italic">${l.name}</div>
+                    <div class="col-span-3">
+                        <input type="number" data-locid="${l.id}" oninput="validateLogic()" class="booked-input w-full bg-slate-50 p-2 rounded-lg text-center font-bold text-sm outline-none" placeholder="Hẹn">
+                    </div>
+                    <div class="col-span-4">
+                        <input type="number" data-locid="${l.id}" class="attended-input w-full bg-slate-50 p-2 rounded-lg text-center font-bold text-sm outline-none" placeholder="Đến">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function initCalendar() {
+            calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+                initialView: 'dayGridMonth', locale: 'vi',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+                dateClick: (info) => {
+                    document.getElementById('report_date').value = info.dateStr;
+                    document.getElementById('display-date').innerText = info.date.toLocaleDateString('vi-VN');
+                    loadData(info.dateStr);
+                },
+                events: async (info, successCallback) => {
+                    const { data } = await supabaseClient.from('daily_reports').select('report_date, successful_calls').eq('employee_email', userEmail);
+                    if (data) successCallback(data.map(r => ({ start: r.report_date, title: `${r.successful_calls} S.C`, className: 'has-data' })));
+                }
+            });
+            calendar.render();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('report_date').value = today;
+            document.getElementById('display-date').innerText = new Date().toLocaleDateString('vi-VN');
+            loadData(today);
+        }
+
+        async function loadData(dateStr) {
+            CALL_FIELDS.forEach(f => document.getElementById(f).value = (f === 'remarks' ? '' : ''));
+            document.querySelectorAll('.booked-input, .attended-input').forEach(i => i.value = '');
+            const { data: report } = await supabaseClient.from('daily_reports').select('*').eq('employee_email', userEmail).eq('report_date', dateStr).maybeSingle();
+            if (report) {
+                CALL_FIELDS.forEach(f => document.getElementById(f).value = report[f] || (f === 'remarks' ? '' : 0));
+                const { data: details } = await supabaseClient.from('report_details').select('*').eq('report_id', report.id);
+                if (details) {
+                    details.forEach(d => {
+                        const b = document.querySelector(`.booked-input[data-locid="${d.location_id}"]`);
+                        const a = document.querySelector(`.attended-input[data-locid="${d.location_id}"]`);
+                        if (b) b.value = d.booked_count;
+                        if (a) a.value = d.attended_count;
+                    });
+                }
+            }
+            validateLogic();
+        }
+
+        async function submitAll() {
             const date = document.getElementById('report_date').value;
             const btn = document.getElementById('btn-submit');
-            
-            btn.disabled = true; btn.innerText = "Đang xử lý...";
-
-            const mainData = {
-                employee_email: user.email,
-                report_date: date,
-                total_calls: parseInt(document.getElementById('total_calls').value) || 0,
-                successful_calls: parseInt(document.getElementById('successful_calls').value) || 0,
-                hot_leads: parseInt(document.getElementById('hot_leads').value) || 0
-            };
-
-            try {
-                let reportId = existingReportId;
-
-                if (existingReportId) {
-                    await supabaseClient.from('daily_reports').update(mainData).eq('id', existingReportId);
-                    await supabaseClient.from('report_details').delete().eq('report_id', existingReportId);
-                } else {
-                    const { data: newReport } = await supabaseClient.from('daily_reports').insert([mainData]).select().single();
-                    reportId = newReport.id;
-                }
-
-                const details = Array.from(document.querySelectorAll('.location-item')).map(div => ({
-                    report_id: reportId,
-                    location_id: div.dataset.id,
-                    booked_count: parseInt(div.querySelector('.booked').value) || 0,
-                    attended_count: parseInt(div.querySelector('.attended').value) || 0
-                }));
-
-                await supabaseClient.from('report_details').insert(details);
-                alert("Dữ liệu đã được lưu thành công!");
-                await checkExistingData();
-            } catch (err) {
-                alert("Lỗi hệ thống: " + err.message);
-            } finally {
-                btn.disabled = false; btn.innerText = "Lưu báo cáo ngày";
-            }
+            btn.disabled = true; btn.innerText = "Đang lưu...";
+            const payload = { employee_email: userEmail, report_date: date };
+            CALL_FIELDS.forEach(f => {
+                const val = document.getElementById(f).value;
+                payload[f] = f === 'remarks' ? val : (parseInt(val) || 0);
+            });
+            const { data: rData, error: e1 } = await supabaseClient.from('daily_reports').upsert([payload], { onConflict: 'report_date, employee_email' }).select().single();
+            if (e1) { alert("Lỗi: " + e1.message); btn.disabled = false; return; }
+            const details = locations.map(l => ({
+                report_id: rData.id,
+                location_id: l.id,
+                booked_count: parseInt(document.querySelector(`.booked-input[data-locid="${l.id}"]`).value) || 0,
+                attended_count: parseInt(document.querySelector(`.attended-input[data-locid="${l.id}"]`).value) || 0
+            }));
+            const { error: e2 } = await supabaseClient.from('report_details').upsert(details, { onConflict: 'report_id, location_id' });
+            if (!e2) { alert("Thành công!"); calendar.refetchEvents(); }
+            else { alert("Lỗi: " + e2.message); }
+            btn.disabled = false;
+            validateLogic();
         }
-
-        init();
+        window.onload = initPage;
     </script>
 </body>
 </html>
