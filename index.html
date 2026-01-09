@@ -3,76 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMS Hub - Home</title>
-    <link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CallMS">
-<link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/headset.png">
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('PWA Ready'))
-        .catch(err => console.log('PWA Error', err));
-    });
-  }
-</script>
+    <title>Strategic Hub - Home</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="./config.js"></script>
+    <script src="./config.js?v=refresh"></script>
 </head>
 <body class="bg-slate-50 flex items-center justify-center min-h-screen p-4">
     <div class="max-w-md w-full space-y-6 text-center">
-        <div class="bg-slate-900 p-10 rounded-[50px] shadow-2xl text-white">
-            <h1 class="text-3xl font-black italic uppercase tracking-tighter">ACC CMS Hub</h1>
-            <p id="user-welcome" class="text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-2">Đang xác thực...</p>
-            
-            <div id="menu-options" class="mt-8 space-y-3">
-                </div>
-
-            <button onclick="logout()" class="mt-8 text-[10px] font-black uppercase opacity-40 hover:opacity-100 transition-all">Đăng xuất</button>
-        </div>
+        <h1 class="text-4xl font-black italic text-slate-900 uppercase tracking-tighter">Strategic Hub</h1>
+        <p id="user-welcome" class="text-slate-500 font-bold uppercase text-[10px] tracking-widest italic">Authenticating...</p>
+        
+        <div id="menu-options" class="grid gap-4 mt-10"></div>
+        
+        <button onclick="logout()" class="mt-8 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:text-red-500 transition-all">Sign Out</button>
     </div>
 
     <script>
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
+        
         async function checkAuth() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) { location.href = 'login.html'; return; }
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return location.href = 'login.html';
 
-            const { data: perms } = await supabaseClient
-                .from('user_permissions')
-                .select('*')
-                .eq('email', session.user.email)
-                .single();
-
+            const { data: perms } = await supabaseClient.from('user_permissions').select('*').eq('email', user.email).single();
             if (!perms) {
                 document.getElementById('user-welcome').innerText = "Tài khoản chưa được cấp quyền";
                 return;
             }
 
-            document.getElementById('user-welcome').innerText = `Chào, ${perms.full_name}`;
+            document.getElementById('user-welcome').innerText = `Welcome, ${perms.full_name}`;
             const roles = perms.role || [];
             const menu = document.getElementById('menu-options');
             
             if (roles.includes('staff')) {
-                menu.innerHTML += `<button onclick="location.href='input.html'" class="w-full bg-white text-slate-900 p-4 rounded-2xl font-black uppercase italic shadow-lg hover:bg-blue-50 transition-all">Nhập liệu báo cáo</button>`;
+                menu.innerHTML += `<button onclick="location.href='input.html'" class="w-full bg-white text-slate-900 p-5 rounded-[30px] font-black uppercase italic shadow-sm border border-slate-100">Data Entry</button>`;
             }
             if (roles.includes('viewer') || roles.includes('admin')) {
-                menu.innerHTML += `<button onclick="location.href='report.html'" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-black uppercase italic shadow-lg hover:bg-blue-700 transition-all">Xem báo cáo chiến lược</button>`;
+                menu.innerHTML += `<button onclick="location.href='report.html'" class="w-full bg-blue-900 text-white p-5 rounded-[30px] font-black uppercase italic shadow-xl">Analytics Dashboard</button>`;
             }
             if (roles.includes('admin')) {
-                menu.innerHTML += `<button onclick="location.href='admin.html'" class="w-full bg-slate-700 text-white p-4 rounded-2xl font-black uppercase italic shadow-lg hover:bg-slate-600 transition-all">Quản trị hệ thống</button>`;
+                menu.innerHTML += `<button onclick="location.href='admin.html'" class="w-full bg-slate-200 text-slate-700 p-5 rounded-[30px] font-black uppercase italic">System Admin</button>`;
             }
         }
 
-        async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
-        window.onload = checkAuth;
+        async function logout() { await supabaseClient.auth.signOut(); location.href = 'login.html'; }
+        checkAuth();
     </script>
 </body>
 </html>
-
-
-
