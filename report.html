@@ -11,30 +11,21 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
-        
-        /* Tối ưu Mobile Sticky */
         .sticky-column { position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #f1f5f9; }
         .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        
-        /* Heatmap colors */
         .rate-good { background-color: #dcfce7 !important; color: #166534 !important; }
         .rate-mid { background-color: #fef9c3 !important; color: #854d0e !important; }
         .rate-bad { background-color: #fee2e2 !important; color: #991b1b !important; }
-
-        select { 
-            -webkit-appearance: none; 
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem;
-        }
+        select { -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem; }
     </style>
 </head>
-<body class="p-2 sm:p-6 pb-20 text-slate-900">
+<body class="p-2 sm:p-6 pb-20">
     <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         
         <div class="flex justify-between items-center bg-white p-5 rounded-[28px] border border-slate-200 shadow-sm">
             <div>
-                <h1 class="text-lg sm:text-xl font-black italic uppercase tracking-tighter">Performance Report</h1>
-                <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Real-time Data Analytics</p>
+                <h1 class="text-lg sm:text-xl font-black italic uppercase tracking-tighter">Strategic Report</h1>
+                <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Efficiency & Data Intelligence</p>
             </div>
             <button onclick="location.href='index.html'" class="bg-slate-100 p-3 rounded-2xl text-slate-600 hover:bg-slate-200 transition-all">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -47,33 +38,32 @@
                     <select id="filter_year" onchange="updateMonthOptions()" class="bg-slate-50 border-none p-3 rounded-xl text-xs font-bold outline-none text-slate-600 flex-1"></select>
                     <select id="filter_month" onchange="updateWeekOptions()" class="bg-slate-50 border-none p-3 rounded-xl text-xs font-bold outline-none text-slate-600 flex-1"></select>
                 </div>
-                <select id="filter_week" class="bg-slate-50 border-none p-3 rounded-xl text-xs font-bold outline-none text-slate-600 sm:min-w-[200px]"></select>
-                <button onclick="loadDataByFilter()" class="bg-blue-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase italic hover:bg-black transition-all shadow-lg">Lọc báo cáo</button>
+                <select id="filter_week" class="bg-slate-50 border-none p-3 rounded-xl text-xs font-bold outline-none text-slate-600 sm:min-w-[220px]"></select>
+                <button onclick="loadDataByFilter()" class="bg-blue-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase italic hover:bg-black transition-all shadow-lg">Xem Báo Cáo</button>
             </div>
-
-            <div class="flex flex-wrap gap-3 items-center bg-white/50 px-4 py-2 rounded-2xl text-[9px] font-bold uppercase tracking-wider border border-slate-100">
-                <span class="text-slate-400 italic">Chú giải:</span>
-                <div class="flex items-center gap-1"><div class="w-3 h-3 rounded rate-good"></div> <span>Tốt (>15% Conv / >80% Show)</span></div>
-                <div class="flex items-center gap-1"><div class="w-3 h-3 rounded rate-mid"></div> <span>Trung bình (7-15% / 50-80%)</span></div>
-                <div class="flex items-center gap-1"><div class="w-3 h-3 rounded rate-bad"></div> <span>Thấp (<7% / <50%)</span></div>
+            <div class="flex flex-wrap gap-3 items-center bg-white/50 px-4 py-2 rounded-2xl text-[9px] font-bold uppercase tracking-wider border border-slate-100 shadow-sm">
+                <span class="text-slate-400 italic font-black">Chỉ số:</span>
+                <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded rate-good"></div> <span>Tốt (>15% Conv / >80% Show)</span></div>
+                <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded rate-mid"></div> <span>Khá (7-15% / 50-80%)</span></div>
+                <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded rate-bad"></div> <span>Thấp (<7% / <50%)</span></div>
             </div>
         </div>
 
         <div class="grid lg:grid-cols-2 gap-4 sm:gap-6">
             <div class="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm">
-                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 italic tracking-widest">Performance Trend</h3>
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 italic tracking-widest">Trend: Bookings vs Attendants</h3>
                 <div class="h-[250px]"><canvas id="trendChart"></canvas></div>
             </div>
             <div class="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm">
-                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 italic tracking-widest">Top 5 Staff Efficiency</h3>
+                <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 italic tracking-widest">Staff Performance Overview</h3>
                 <div class="h-[250px]"><canvas id="efficiencyChart"></canvas></div>
             </div>
         </div>
 
         <div class="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
-            <div class="p-5 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                <h2 class="text-[10px] font-black uppercase italic tracking-widest text-slate-400">Unit Analytics</h2>
-                <div id="unit-total-call" class="text-[10px] font-black text-blue-900 italic"></div>
+            <div class="p-5 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center flex-wrap gap-2">
+                <h2 class="text-[10px] font-black uppercase italic tracking-widest text-slate-400">Unit Performance Overview</h2>
+                <div id="unit-header-stats" class="text-[10px] font-black text-blue-900 italic flex gap-4"></div>
             </div>
             <div class="table-container">
                 <table id="unitTable" class="w-full text-left text-[11px] whitespace-nowrap"></table>
@@ -82,7 +72,7 @@
 
         <div class="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden pb-4">
             <div class="p-5 border-b border-slate-50 bg-slate-50/50">
-                <h2 class="text-[10px] font-black uppercase italic tracking-widest text-slate-400">Staff Contribution Detail</h2>
+                <h2 class="text-[10px] font-black uppercase italic tracking-widest text-slate-400">Detailed Staff Efficiency</h2>
             </div>
             <div class="table-container">
                 <table id="staffTable" class="w-full text-left text-[10px] whitespace-nowrap border-collapse"></table>
@@ -147,7 +137,7 @@
         }
 
         function processAndRender() {
-            let unitPivot = {}, staffPivot = {}, dailyTrend = {}, tC = 0, tS = 0;
+            let unitPivot = {}, staffPivot = {}, dailyTrend = {}, tC = 0, tS = 0, tB = 0;
 
             fullData.forEach(r => {
                 const d = r.report_date;
@@ -170,11 +160,16 @@
                         if (!staffPivot[name].loc[ln]) staffPivot[name].loc[ln] = 0;
                         staffPivot[name].loc[ln] += bc; staffPivot[name].b += bc; staffPivot[name].a += ac;
                         dailyTrend[d].b += bc; dailyTrend[d].a += ac;
+                        tB += bc;
                     });
                 }
             });
 
-            document.getElementById('unit-total-call').innerText = `TOTAL SYSTEM CALL: ${tC.toLocaleString()}`;
+            document.getElementById('unit-header-stats').innerHTML = `
+                <span>CALL: ${tC.toLocaleString()}</span>
+                <span>SUCCESS: ${tS.toLocaleString()}</span>
+                <span class="text-emerald-600 font-black">CONV: ${((tB/(tC||1))*100).toFixed(1)}%</span>
+            `;
             renderCharts(dailyTrend, staffPivot);
             renderUnitTable(unitPivot, tS, tC);
             renderStaffTable(staffPivot);
@@ -182,19 +177,17 @@
 
         function renderUnitTable(pivot, s, c) {
             const units = Object.keys(pivot).sort();
-            let h = `<thead class="bg-slate-50 border-b"><tr><th class="p-4 font-black text-slate-400 uppercase italic">Chỉ số hệ thống</th>
+            let h = `<thead class="bg-slate-50 border-b"><tr><th class="p-4 font-black text-slate-400 uppercase italic">Metric</th>
                 ${units.map(u => `<th class="p-4 text-center text-blue-900 font-black uppercase border-l italic">${u}</th>`).join('')}</tr></thead><tbody>`;
             
             const rows = [
-                { l: 'Successful Calls', d: units.map(u => s) },
                 { l: 'Booking (Số Hẹn)', d: units.map(u => pivot[u].b), cls: 'bg-blue-50/20 font-bold' },
-                { l: 'Conversion Rate %', d: units.map(u => ((pivot[u].b/(c||1))*100).toFixed(1) + '%'), type: 'conv' },
                 { l: 'Attendant (Khách Đến)', d: units.map(u => pivot[u].a), cls: 'bg-emerald-50/20 font-bold' },
                 { l: 'Show-up Rate %', d: units.map(u => ((pivot[u].a/(pivot[u].b||1))*100).toFixed(0) + '%'), type: 'show' }
             ];
 
             rows.forEach(r => {
-                h += `<tr class="border-b ${r.cls||''}"><td class="p-4 font-bold text-slate-500 bg-slate-50/30 whitespace-nowrap">${r.l}</td>`;
+                h += `<tr class="border-b ${r.cls||''}"><td class="p-4 font-bold text-slate-500 bg-slate-50/30">${r.l}</td>`;
                 r.d.forEach(v => { h += `<td class="p-4 text-center font-black border-l ${r.type?getRateClass(parseFloat(v),r.type):''}">${v}</td>`; });
                 h += `</tr>`;
             });
@@ -209,11 +202,11 @@
                 <th class="p-4 sticky-column z-20 font-black uppercase italic text-slate-400 min-w-[120px]">Nhân sự</th>
                 <th class="p-4 text-center font-black uppercase italic text-slate-500">T.Call</th>
                 <th class="p-4 text-center font-black uppercase italic text-blue-900 border-l">S.Call</th>
-                <th class="p-4 text-center font-black uppercase italic text-orange-600 border-l">Hot/Warm</th>
+                <th class="p-4 text-center font-black uppercase italic text-orange-600 border-l">H/W</th>
                 ${locs.map(l => `<th class="p-4 text-center font-black uppercase italic text-slate-400 border-l">${l}</th>`).join('')}
-                <th class="p-4 text-center font-black uppercase italic text-indigo-600 border-l bg-indigo-50/30">Tổng Hẹn</th>
-                <th class="p-4 text-center font-black uppercase italic text-emerald-600 border-l relative group cursor-help">Conv%<span class="hidden group-hover:block absolute bottom-full mb-1 left-0 bg-black text-white p-2 rounded text-[8px] normal-case">Hẹn/Tổng Call</span></th>
-                <th class="p-4 text-center font-black uppercase italic text-rose-600 border-l relative group cursor-help">Show%<span class="hidden group-hover:block absolute bottom-full mb-1 left-0 bg-black text-white p-2 rounded text-[8px] normal-case">Đến/Tổng Hẹn</span></th></tr></thead><tbody>`;
+                <th class="p-4 text-center font-black uppercase italic text-indigo-600 border-l bg-indigo-50/30">Hẹn</th>
+                <th class="p-4 text-center font-black uppercase italic text-emerald-600 border-l relative group cursor-help">Conv%<span class="hidden group-hover:block absolute bottom-full mb-1 left-[-40px] bg-black text-white p-2 rounded text-[8px] normal-case w-24">Hẹn/T.Call</span></th>
+                <th class="p-4 text-center font-black uppercase italic text-rose-600 border-l relative group cursor-help">Show%<span class="hidden group-hover:block absolute bottom-full mb-1 left-[-40px] bg-black text-white p-2 rounded text-[8px] normal-case w-24">Đến/Hẹn</span></th></tr></thead><tbody>`;
 
             sorted.forEach(([n, v]) => {
                 const cR = (v.b/(v.t||1))*100, sR = (v.a/(v.b||1))*100;
@@ -221,7 +214,7 @@
                     <td class="p-4 sticky-column font-black text-slate-900 uppercase tracking-tighter">${n}</td>
                     <td class="p-4 text-center font-bold text-slate-400">${v.t}</td>
                     <td class="p-4 text-center font-black text-blue-700 bg-blue-50/30 border-l">${v.s}</td>
-                    <td class="p-4 text-center font-bold border-l"><span class="text-rose-600">${v.h}</span>/<span class="text-orange-400">${v.w}</span></td>
+                    <td class="p-4 text-center font-bold border-l">${v.h}/${v.w}</td>
                     ${locs.map(l => `<td class="p-4 text-center font-medium border-l ${v.loc[l]?'text-slate-900':'text-slate-200'}">${v.loc[l]||0}</td>`).join('')}
                     <td class="p-4 text-center font-black text-indigo-700 bg-indigo-50/30 border-l">${v.b}</td>
                     <td class="p-4 text-center font-black border-l ${getRateClass(cR, 'conv')}">${cR.toFixed(1)}%</td>
@@ -237,8 +230,8 @@
             trendChart = new Chart(document.getElementById('trendChart'), {
                 type: 'line',
                 data: { labels, datasets: [
-                    { label: 'Hẹn', data: labels.map(l => trend[l].b), borderColor: '#1e40af', tension: 0.4 },
-                    { label: 'Đến', data: labels.map(l => trend[l].a), borderColor: '#10b981', tension: 0.4 }
+                    { label: 'Hẹn', data: labels.map(l => trend[l].b), borderColor: '#1e40af', tension: 0.4, borderWidth: 3 },
+                    { label: 'Đến', data: labels.map(l => trend[l].a), borderColor: '#10b981', tension: 0.4, borderWidth: 3 }
                 ]},
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
@@ -247,8 +240,8 @@
             efficiencyChart = new Chart(document.getElementById('efficiencyChart'), {
                 type: 'bar',
                 data: { labels: topStaff.map(x => x[0]), datasets: [
-                    { label: 'Hẹn', data: topStaff.map(x => x[1].b), backgroundColor: '#1e40af' },
-                    { label: 'Đến', data: topStaff.map(x => x[1].a), backgroundColor: '#10b981' }
+                    { label: 'Booking', data: topStaff.map(x => x[1].b), backgroundColor: '#1e40af' },
+                    { label: 'Show-up', data: topStaff.map(x => x[1].a), backgroundColor: '#10b981' }
                 ]},
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
             });
