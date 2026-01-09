@@ -3,91 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CMS Report</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="CallMS">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/headset.png">
-
+    <title>Strategic Analytics Hub</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="./config.js"></script>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-btn.active { background-color: white; color: #1e40af; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); font-weight: 900; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="p-3 md:p-8">
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-                <h1 class="text-2xl font-black italic text-slate-900 uppercase tracking-tighter leading-none">Analytics Hub</h1>
-                <p class="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Version 2.0 - No Cache Mode</p>
+                <h1 class="text-2xl font-black italic text-slate-900 uppercase tracking-tighter">Strategic Hub</h1>
+                <p class="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Performance Data Sync</p>
             </div>
             
             <div class="flex flex-wrap gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 w-full md:w-auto">
-                <select id="year-filter" class="bg-slate-50 border-none text-[11px] font-bold rounded-lg px-2 py-2 outline-none">
-                    <option value="2025" selected>2025</option>
-                    <option value="2024">2024</option>
-                </select>
+                <select id="year-filter" class="bg-slate-50 border-none text-[11px] font-bold rounded-lg px-2 py-2 outline-none"></select>
                 <select id="month-filter" onchange="toggleFilters()" class="bg-slate-50 border-none text-[11px] font-bold rounded-lg px-2 py-2 outline-none">
                     <option value="all">Cả năm</option>
                     <script>for(let i=1; i<=12; i++) document.write(`<option value="${i}">Tháng ${i}</option>`);</script>
                 </select>
                 <select id="week-filter" class="hidden bg-slate-50 border-none text-[11px] font-bold rounded-lg px-2 py-2 outline-none">
                     <option value="all">Cả tháng</option>
-                    <option value="1">Tuần 1</option><option value="2">Tuần 2</option>
-                    <option value="3">Tuần 3</option><option value="4">Tuần 4</option>
+                    <option value="1">Tuần 1</option><option value="2">Tuần 2</option><option value="3">Tuần 3</option><option value="4">Tuần 4</option>
                 </select>
-                <select id="staff-filter" class="bg-slate-100 border-none text-[11px] font-black rounded-lg px-2 py-2 outline-none text-blue-900 max-w-[110px]">
-                    <option value="all">Tất cả Telesale</option>
+                <select id="staff-filter" class="bg-slate-100 border-none text-[11px] font-black rounded-lg px-2 py-2 outline-none text-blue-900 max-w-[120px]">
+                    <option value="all">Tất cả nhân sự</option>
                 </select>
-                <button onclick="loadData()" class="bg-blue-900 text-white text-[10px] font-black uppercase px-4 py-2 rounded-lg ml-auto md:ml-0">Lọc</button>
+                <button onclick="loadData()" class="bg-blue-900 text-white text-[10px] font-black uppercase px-4 py-2 rounded-lg">Lọc dữ liệu</button>
             </div>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6" id="summary-badges"></div>
 
         <div class="flex p-1 bg-slate-200/50 rounded-2xl mb-6 border border-slate-200">
-            <button onclick="switchTab('tab-overview', this)" class="tab-btn active flex-1 py-2 text-[11px] uppercase rounded-xl transition-all">Clinic Overview</button>
-            <button onclick="switchTab('tab-staff', this)" class="tab-btn flex-1 py-2 text-[11px] font-bold uppercase rounded-xl transition-all text-slate-500">Staff Performance</button>
+            <button onclick="switchTab('tab-overview', this)" class="tab-btn active flex-1 py-2 text-[11px] uppercase rounded-xl transition-all">Hiệu suất Đơn vị</button>
+            <button onclick="switchTab('tab-staff', this)" class="tab-btn flex-1 py-2 text-[11px] font-bold uppercase rounded-xl transition-all text-slate-500">Chi tiết Nhân sự</button>
         </div>
 
         <div id="tab-overview" class="tab-content active">
-            <div id="clinic-performance-container" class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-6 overflow-x-auto"></div>
+            <div id="unit-performance-container" class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-6 overflow-x-auto hide-scrollbar"></div>
             <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-6">
-                <canvas id="performanceChart" height="130"></canvas>
+                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 italic">Biểu đồ xu hướng</p>
+                <canvas id="overviewChart" height="120"></canvas>
             </div>
         </div>
 
         <div id="tab-staff" class="tab-content">
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-6">
-                <div class="p-3 bg-slate-900 text-white font-black italic uppercase text-[9px]">Xếp hạng</div>
-                <table class="w-full text-left text-[11px]"><tbody id="staff-ranking-body"></tbody></table>
+            <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 mb-6">
+                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 italic">So sánh Success Calls theo nhân sự</p>
+                <canvas id="staffChart" height="120"></canvas>
             </div>
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-3 bg-blue-900 text-white font-black italic uppercase text-[9px]">Lịch sử</div>
-                <table class="w-full text-left text-[10px]"><tbody id="history-body"></tbody></table>
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                <div class="p-3 bg-slate-900 text-white font-black italic uppercase text-[9px]">Bảng xếp hạng hiệu suất</div>
+                <table class="w-full text-left text-[11px]"><tbody id="staff-ranking-body"></tbody></table>
             </div>
         </div>
     </div>
 
     <script>
-        const CONFIG_REPORT = { thresholds: { showUp: { danger: 25, success: 45 }, conversion: { danger: 8, success: 18 } } };
+        const THRESHOLDS = { showUp: { danger: 25, success: 45 }, conversion: { danger: 8, success: 18 } };
         const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-        let chartInstance = null; let fullData = [];
+        let chartOV = null; let chartST = null; let fullData = [];
+
+        async function setupYearFilter() {
+            const currentYear = new Date().getFullYear();
+            const { data } = await supabaseClient.from('daily_reports').select('report_date');
+            let years = data ? data.map(r => new Date(r.report_date).getFullYear()) : [];
+            years.push(currentYear);
+            const uniqueYears = [...new Set(years)].sort((a, b) => b - a);
+            const yearSelect = document.getElementById('year-filter');
+            yearSelect.innerHTML = uniqueYears.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`).join('');
+            loadData();
+        }
 
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.classList.add('text-slate-500'); });
             document.getElementById(tabId).classList.add('active');
             el.classList.add('active'); el.classList.remove('text-slate-500');
+            if(tabId === 'tab-staff') renderStaffChart();
         }
 
         function toggleFilters() {
@@ -117,7 +120,7 @@
             const staff = [...new Set(data.map(r => JSON.stringify({e: r.employee_email, n: r.user_permissions?.full_name})))];
             const select = document.getElementById('staff-filter');
             const cur = select.value;
-            select.innerHTML = '<option value="all">Tất cả Telesale</option>';
+            select.innerHTML = '<option value="all">Tất cả nhân sự</option>';
             staff.forEach(s => { const o = JSON.parse(s); select.innerHTML += `<option value="${o.e}">${o.n || o.e}</option>`; });
             select.value = cur;
         }
@@ -126,66 +129,99 @@
             const selectedStaff = document.getElementById('staff-filter').value;
             const isYearly = document.getElementById('month-filter').value === 'all';
             const filtered = selectedStaff === 'all' ? fullData : fullData.filter(r => r.employee_email === selectedStaff);
+            
             let gC=0, gS=0, gB=0, gA=0;
-            const clinicPivot = {}; const staffPivot = {}; const timePivot = {};
+            const unitPivot = {}; const staffPivot = {}; const timePivot = {};
 
             filtered.forEach(r => {
                 gC += r.total_calls || 0; gS += r.successful_calls || 0;
                 const tKey = isYearly ? `Tháng ${new Date(r.report_date).getMonth() + 1}` : r.report_date;
-                if(!timePivot[tKey]) timePivot[tKey] = {s: 0, b: 0, c: 0, h: 0};
-                timePivot[tKey].s += r.successful_calls || 0; timePivot[tKey].c += r.total_calls || 0; timePivot[tKey].h += r.hot_leads || 0;
+                if(!timePivot[tKey]) timePivot[tKey] = {s: 0, b: 0, c: 0};
+                timePivot[tKey].s += r.successful_calls || 0; timePivot[tKey].c += r.total_calls || 0;
+                
                 const name = r.user_permissions?.full_name || r.employee_email;
-                if(!staffPivot[name]) staffPivot[name] = {c:0, s:0, h:0};
+                if(!staffPivot[name]) staffPivot[name] = {c:0, s:0, h:0, b:0};
                 staffPivot[name].c += r.total_calls || 0; staffPivot[name].s += r.successful_calls || 0; staffPivot[name].h += r.hot_leads || 0;
+
                 if(r.report_details) {
                     r.report_details.forEach(d => {
                         const loc = d.locations?.name || 'N/A';
-                        if(!clinicPivot[loc]) clinicPivot[loc] = {b:0, a:0};
-                        clinicPivot[loc].b += d.booked_count || 0; clinicPivot[loc].a += d.attended_count || 0;
-                        gB += d.booked_count || 0; gA += d.attended_count || 0; timePivot[tKey].b += d.booked_count || 0;
+                        if(!unitPivot[loc]) unitPivot[loc] = {b:0, a:0, h:0};
+                        unitPivot[loc].b += d.booked_count || 0;
+                        unitPivot[loc].a += d.attended_count || 0;
+                        unitPivot[loc].h += Math.round((r.hot_leads || 0) / r.report_details.length); // Phân bổ lead tạm tính cho đơn vị
+                        gB += d.booked_count || 0; gA += d.attended_count || 0;
+                        timePivot[tKey].b += d.booked_count || 0;
+                        staffPivot[name].b += d.booked_count || 0;
                     });
                 }
             });
-            renderBadges(gC, gS, gB, gA); renderClinicTable(clinicPivot, gC, gB); renderStaffTable(staffPivot); renderHistoryTable(timePivot); updateChart(timePivot);
+
+            renderBadges(gC, gS, gB, gA);
+            renderUnitTable(unitPivot, gC, gS);
+            renderStaffTable(staffPivot);
+            updateOverviewChart(timePivot);
         }
 
         function renderBadges(c, s, b, a) {
             document.getElementById('summary-badges').innerHTML = `
-                <div class="bg-blue-900 p-4 rounded-[28px] text-white"><p class="text-[9px] font-black opacity-50 uppercase italic">Calls/Success</p><p class="text-xl font-black italic">${c}<span class="text-xs opacity-50 ml-1">/ ${s}</span></p></div>
-                <div class="bg-white p-4 rounded-[28px] border border-slate-100 shadow-sm"><p class="text-[9px] font-black text-slate-400 uppercase italic">Bookings</p><p class="text-xl font-black italic text-blue-900">${b}</p></div>
-                <div class="bg-white p-4 rounded-[28px] border border-slate-100 shadow-sm"><p class="text-[9px] font-black text-slate-400 uppercase italic">Conv. Rate</p><p class="text-xl font-black italic text-blue-900">${((b/(c||1))*100).toFixed(1)}%</p></div>
-                <div class="bg-emerald-500 p-4 rounded-[28px] text-white"><p class="text-[9px] font-black opacity-50 uppercase italic">Attendants</p><p class="text-xl font-black italic">${a}</p></div>`;
+                <div class="bg-blue-900 p-4 rounded-[28px] text-white"><p class="text-[9px] font-black opacity-50 uppercase italic">Tổng Call</p><p class="text-xl font-black italic">${c}</p></div>
+                <div class="bg-white p-4 rounded-[28px] border border-slate-100 shadow-sm"><p class="text-[9px] font-black text-slate-400 uppercase italic">Thành công</p><p class="text-xl font-black italic text-blue-900">${s}</p></div>
+                <div class="bg-white p-4 rounded-[28px] border border-slate-100 shadow-sm"><p class="text-[9px] font-black text-slate-400 uppercase italic">Tổng Booking</p><p class="text-xl font-black italic text-blue-900">${b}</p></div>
+                <div class="bg-emerald-500 p-4 rounded-[28px] text-white"><p class="text-[9px] font-black opacity-50 uppercase italic">Khách đến</p><p class="text-xl font-black italic">${a}</p></div>`;
         }
 
-        function renderClinicTable(pivot, totalC, totalB) {
-            const clinics = Object.keys(pivot);
-            const getClr = (v, t) => v < CONFIG_REPORT.thresholds[t].danger ? 'text-red-500' : (v > CONFIG_REPORT.thresholds[t].success ? 'text-emerald-500' : 'text-blue-700');
+        function renderUnitTable(pivot, totalC, totalS) {
+            const units = Object.keys(pivot);
+            const totalB = Object.values(pivot).reduce((sum, u) => sum + u.b, 0);
+            const getClr = (v, t) => v < THRESHOLDS[t].danger ? 'text-red-500' : (v > THRESHOLDS[t].success ? 'text-emerald-500' : 'text-blue-700');
+            
             let html = `<table class="w-full text-left border-collapse text-[11px]">
-                <thead class="bg-slate-50 border-b"><tr><th class="p-3 w-1/3"></th>${clinics.map(c => `<th class="p-3 text-center text-blue-900 font-black text-[10px] uppercase">${c}</th>`).join('')}</tr></thead>
+                <thead class="bg-slate-50 border-b"><tr><th class="p-3 w-1/3 text-slate-400 font-black italic uppercase text-[9px]">Chỉ số theo Đơn vị</th>${units.map(u => `<th class="p-3 text-center text-blue-900 font-black text-[10px] uppercase">${u}</th>`).join('')}</tr></thead>
                 <tbody>
-                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[9px] text-slate-400">Calls (System)</td><td colspan="${clinics.length}" class="text-center font-black bg-blue-50/50 text-blue-900 text-sm">${totalC}</td></tr>
-                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[9px] text-slate-400">Conv. Rate</td>${clinics.map(c => `<td class="p-3 text-center font-black ${getClr((pivot[c].b/(totalC||1))*100, 'conversion')}">${((pivot[c].b/(totalC||1))*100).toFixed(1)}%</td>`).join('')}</tr>
-                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[9px] text-slate-400">Show-up Rate</td>${clinics.map(c => `<td class="p-3 text-center font-black ${getClr((pivot[c].a/(pivot[c].b||1))*100, 'showUp')}">${((pivot[c].a/(pivot[c].b||1))*100).toFixed(0)}%</td>`).join('')}</tr>
-                    <tr class="bg-blue-900 text-white font-black italic"><td><span class="p-3 uppercase text-[9px] opacity-60">Attendants</span></td>${clinics.map(c => `<td class="p-3 text-center">${pivot[c].a}</td>`).join('')}</tr>
+                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[8px] text-slate-400">Total Call (Hệ thống)</td><td colspan="${units.length}" class="text-center font-black bg-blue-50/30 text-blue-900 italic">${totalC}</td></tr>
+                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[8px] text-slate-400">Total Success (Hệ thống)</td><td colspan="${units.length}" class="text-center font-black bg-emerald-50/30 text-emerald-600 italic">${totalS}</td></tr>
+                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[8px] text-slate-400">Total Global Booking</td><td colspan="${units.length}" class="text-center font-black bg-orange-50/30 text-orange-600 italic">${totalB}</td></tr>
+                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[8px] text-slate-500 italic">Total Leads (Hot/Warm)</td>${units.map(u => `<td class="p-3 text-center font-bold text-slate-700">${pivot[u].h}</td>`).join('')}</tr>
+                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[8px] text-slate-500 italic">Booking Per Unit</td>${units.map(u => `<td class="p-3 text-center font-bold text-blue-800">${pivot[u].b}</td>`).join('')}</tr>
+                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[8px] text-slate-500 italic">Conv. Rate (Book/Call)</td>${units.map(u => { const r = (pivot[u].b/(totalC||1))*100; return `<td class="p-3 text-center font-black ${getClr(r, 'conversion')}">${r.toFixed(1)}%</td>`}).join('')}</tr>
+                    <tr class="border-b"><td class="p-3 font-bold bg-slate-50 uppercase text-[8px] text-slate-500 italic">Show-up Rate (Atnd/Book)</td>${units.map(u => { const r = (pivot[u].a/(pivot[u].b||1))*100; return `<td class="p-3 text-center font-black ${getClr(r, 'showUp')}">${r.toFixed(0)}%</td>`}).join('')}</tr>
+                    <tr class="bg-blue-900 text-white font-black italic shadow-inner"><td><span class="p-3 uppercase text-[9px] opacity-60">Attendants (Thực tế)</span></td>${units.map(u => `<td class="p-3 text-center text-sm">${pivot[u].a}</td>`).join('')}</tr>
                 </tbody></table>`;
-            document.getElementById('clinic-performance-container').innerHTML = html;
+            document.getElementById('unit-performance-container').innerHTML = html;
         }
 
         function renderStaffTable(staff) {
             const sorted = Object.entries(staff).sort((a,b) => b[1].s - a[1].s);
             document.getElementById('staff-ranking-body').innerHTML = sorted.map(([name, v]) => `
-                <tr class="border-b"><td class="p-3 font-bold text-slate-700">${name}</td><td class="p-3 text-center font-black text-blue-900 text-xs">${v.s} S.C</td><td class="p-3 text-right"><span class="bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-black text-[9px] uppercase">${((v.h/(v.s||1))*100).toFixed(0)}% Hot</span></td></tr>`).join('');
+                <tr class="border-b">
+                    <td class="p-3 font-bold text-slate-700">${name}</td>
+                    <td class="p-3 text-center font-black text-blue-900 text-xs">${v.s} S.C</td>
+                    <td class="p-3 text-center font-bold text-emerald-600 text-xs">${v.b} Book</td>
+                    <td class="p-3 text-right"><span class="bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-black text-[9px] uppercase">${((v.h/(v.s||1))*100).toFixed(0)}% Hot</span></td>
+                </tr>`).join('');
+            window.lastStaffData = staff; // Lưu lại để vẽ chart
         }
 
-        function renderHistoryTable(time) {
-            document.getElementById('history-body').innerHTML = Object.entries(time).reverse().map(([k, v]) => `
-                <tr class="border-b"><td class="p-3 text-slate-500 font-bold">${k}</td><td class="p-3 text-center text-slate-400 font-medium">${v.c} Calls</td><td class="p-3 text-center font-black text-blue-900">${v.s}</td><td class="p-3 text-center font-bold text-orange-500">${v.h}</td></tr>`).join('');
+        function renderStaffChart() {
+            const data = window.lastStaffData;
+            if(!data) return;
+            const ctx = document.getElementById('staffChart').getContext('2d');
+            if (chartST) chartST.destroy();
+            chartST = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(data),
+                    datasets: [{ label: 'Success Calls', data: Object.values(data).map(v => v.s), backgroundColor: '#1e40af', borderRadius: 8 }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' } } } } }
+            });
         }
 
-        function updateChart(timeData) {
-            const ctx = document.getElementById('performanceChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
+        function updateOverviewChart(timeData) {
+            const ctx = document.getElementById('overviewChart').getContext('2d');
+            if (chartOV) chartOV.destroy();
+            chartOV = new Chart(ctx, {
                 type: 'line',
                 data: { labels: Object.keys(timeData), datasets: [
                     { label: 'Success', data: Object.values(timeData).map(v => v.s), borderColor: '#1e40af', borderWidth: 3, tension: 0.4, pointRadius: 0, fill: true, backgroundColor: 'rgba(30, 64, 175, 0.05)' },
@@ -194,7 +230,8 @@
                 options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, display: false }, x: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' } } } } }
             });
         }
-        window.onload = loadData;
+
+        window.onload = setupYearFilter;
     </script>
 </body>
 </html>
